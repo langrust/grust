@@ -9,7 +9,7 @@ pub struct Service {
     pub time_range: Option<(u64, u64)>,
     /// Service's statements.
     pub statements: HashMap<usize, FlowStatement>,
-    /// Flows dependency graph.
+    /// Flows dependency graph, nodes are statements ids.
     pub graph: DiGraphMap<usize, ()>,
 }
 impl Service {
@@ -191,7 +191,9 @@ impl Service {
 }
 
 pub struct Interface {
+    /// stmt_id -> import
     pub imports: HashMap<usize, FlowImport>,
+    /// stmt_id -> export
     pub exports: HashMap<usize, FlowExport>,
     /// GRust interface's services.
     pub services: Vec<Service>,

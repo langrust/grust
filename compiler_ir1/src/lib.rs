@@ -10,6 +10,7 @@ mod dependencies;
 mod ir0_into_ir1;
 mod ir0_store;
 mod typing;
+mod unused;
 
 pub mod import {
     pub use crate::prelude::ir1::{self, Ir0IntoIr1, Ir0Store, Typing};

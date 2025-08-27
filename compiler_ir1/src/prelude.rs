@@ -41,6 +41,7 @@ pub mod ir1 {
             Ir0StoreStmtPattern,
         },
         typing::Typing,
+        unused::Unused,
     };
 }
 

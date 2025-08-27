@@ -1,7 +1,7 @@
 pub use super::{
     new_graph,
     petgraph::{
-        algo::toposort,
+        algo::{has_path_connecting, toposort},
         graphmap::{DiGraphMap, GraphMap, NodeTrait},
         visit,
         visit::DfsEvent,

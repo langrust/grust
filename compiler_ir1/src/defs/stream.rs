@@ -249,6 +249,7 @@ impl Stmt {
     /// which can not be computed by a function call.
     pub fn inline_when_needed_recursive(
         self,
+        subgraph: &DiGraphMap<usize, Label>,
         memory: &mut Memory,
         identifier_creator: &mut IdentifierCreator,
         ctx: &mut Ctx,
@@ -256,14 +257,20 @@ impl Stmt {
     ) -> Vec<stream::Stmt> {
         let mut current_statements = vec![self.clone()];
         let mut new_statements =
-            self.inline_when_needed(memory, identifier_creator, ctx, components);
+            self.inline_when_needed(subgraph, memory, identifier_creator, ctx, components);
         while current_statements != new_statements {
             current_statements = new_statements;
             new_statements = current_statements
                 .clone()
                 .into_iter()
                 .flat_map(|statement| {
-                    statement.inline_when_needed(memory, identifier_creator, ctx, components)
+                    statement.inline_when_needed(
+                        subgraph,
+                        memory,
+                        identifier_creator,
+                        ctx,
+                        components,
+                    )
                 })
                 .collect();
         }
@@ -272,6 +279,7 @@ impl Stmt {
 
     fn inline_when_needed(
         self,
+        subgraph: &DiGraphMap<usize, Label>,
         memory: &mut Memory,
         identifier_creator: &mut IdentifierCreator,
         ctx: &mut Ctx,
@@ -286,7 +294,7 @@ impl Stmt {
             } => {
                 // a loop in the graph induces that "component call" inputs depends on output
                 let is_loop = {
-                    let mut graph = DiGraphMap::new();
+                    let mut graph = subgraph.clone();
                     let outs = self.pattern.identifiers();
                     let in_deps = inputs.iter().flat_map(|(_, expr)| expr.get_dependencies());
                     for (to, label) in in_deps {

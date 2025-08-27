@@ -12,7 +12,6 @@ fn should_compile_speed_limiter_onchange() {
         import signal   car::adas::vacuum_brake             : VacuumBrakeState;
         import event    car::adas::kickdown                 : Kickdown;
         import event    car::adas::failure                  : Failure;
-        import signal   car::adas::vdc                      : VdcState;
 
         export event    car::adas::speed_limiter::in_regulation : bool;
         export signal   car::adas::speed_limiter::v_set         : float;
@@ -119,7 +118,6 @@ fn should_compile_speed_limiter_onchange() {
             vacuum_brake_state: VacuumBrakeState,
             kickdown: Kickdown?,
             failure: Failure?,
-            vdc_disabled: VdcState,
             speed: float,
             v_set: float,
         ) -> (
@@ -217,7 +215,6 @@ fn should_compile_speed_limiter_onchange() {
                 vacuum_brake,
                 kickdown,
                 failure,
-                vdc,
                 speed,
                 v_set,
             );
@@ -226,7 +223,7 @@ fn should_compile_speed_limiter_onchange() {
         }
     };
     let (ast, mut ctx) = top.init();
-    let tokens = compiler_top::into_token_stream(ast, &mut ctx);
+    let tokens = compiler_top::into_token_stream_res(ast, &mut ctx).unwrap();
     if let Some(path) = ctx.conf.dump_code {
         compiler_top::dump_code(&path, &tokens).unwrap();
     }

@@ -83,35 +83,18 @@ impl grust::core::Component for FibCallState {
     }
     fn step(&mut self, input: FibCallInput) -> FibCallOutput {
         let fib = self.last_next_o_1;
-        let (next_o, next_o_1) = std::thread::scope(|reserved_grust_thread_scope| {
-            let reserved_grust_thread_kid_0 = reserved_grust_thread_scope.spawn(|| {
-                let NextOutput { next_o } = <NextState as grust::core::Component>::step(
-                    &mut self.next,
-                    NextInput { i: fib },
-                );
-                (next_o)
-            });
-            let reserved_grust_thread_kid_1 = reserved_grust_thread_scope.spawn(|| {
-                let NextOutput { next_o } = <NextState as grust::core::Component>::step(
-                    &mut self.next_1,
-                    NextInput { i: fib },
-                );
-                (next_o)
-            });
-            let (next_o, next_o_1) = (
-                {
-                    reserved_grust_thread_kid_0
-                        .join()
-                        .expect("unexpected panic in sub-thread")
-                },
-                {
-                    reserved_grust_thread_kid_1
-                        .join()
-                        .expect("unexpected panic in sub-thread")
-                },
+        let next_o = {
+            let NextOutput { next_o } =
+                <NextState as grust::core::Component>::step(&mut self.next, NextInput { i: fib });
+            (next_o)
+        };
+        let next_o_1 = {
+            let NextOutput { next_o } = <NextState as grust::core::Component>::step(
+                &mut self.next_1,
+                NextInput { i: next_o },
             );
-            (next_o, next_o_1)
-        });
+            (next_o)
+        };
         self.last_next_o_1 = next_o_1;
         FibCallOutput { fib }
     }

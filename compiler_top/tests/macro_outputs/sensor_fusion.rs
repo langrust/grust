@@ -119,7 +119,6 @@ impl grust::core::Component for NormalizeQuatState {
     }
 }
 pub struct IntegralFeedbackInput {
-    pub x: f64,
     pub halfx: f64,
 }
 pub struct IntegralFeedbackOutput {
@@ -216,10 +215,7 @@ impl grust::core::Component for Sensfusion6QuatState {
                     let IntegralFeedbackOutput { integralFB } =
                         <IntegralFeedbackState as grust::core::Component>::step(
                             &mut self.integral_feedback,
-                            IntegralFeedbackInput {
-                                x: grx,
-                                halfx: halfex,
-                            },
+                            IntegralFeedbackInput { halfx: halfex },
                         );
                     (integralFB)
                 };
@@ -228,10 +224,7 @@ impl grust::core::Component for Sensfusion6QuatState {
                     let IntegralFeedbackOutput { integralFB } =
                         <IntegralFeedbackState as grust::core::Component>::step(
                             &mut self.integral_feedback_1,
-                            IntegralFeedbackInput {
-                                x: gry,
-                                halfx: halfey,
-                            },
+                            IntegralFeedbackInput { halfx: halfey },
                         );
                     (integralFB)
                 };
@@ -240,10 +233,7 @@ impl grust::core::Component for Sensfusion6QuatState {
                     let IntegralFeedbackOutput { integralFB } =
                         <IntegralFeedbackState as grust::core::Component>::step(
                             &mut self.integral_feedback_2,
-                            IntegralFeedbackInput {
-                                x: grz,
-                                halfx: halfez,
-                            },
+                            IntegralFeedbackInput { halfx: halfez },
                         );
                     (integralFB)
                 };
