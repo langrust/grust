@@ -12,7 +12,6 @@ mod sl {
         import signal   car::adas::vacuum_brake             : VacuumBrakeState;
         import event    car::adas::kickdown                 : Kickdown;
         import event    car::adas::failure                  : Failure;
-        import signal   car::adas::vdc                      : VdcState;
 
         export event    car::adas::speed_limiter::in_regulation : bool;
         export signal   car::adas::speed_limiter::v_set         : float;
@@ -120,7 +119,6 @@ mod sl {
             vacuum_brake_state: VacuumBrakeState,
             kickdown: Kickdown?,
             failure: Failure?,
-            vdc_disabled: VdcState,
             speed: float,
             v_set: float,
         ) -> (
@@ -218,7 +216,6 @@ mod sl {
                 vacuum_brake,
                 kickdown,
                 failure,
-                vdc,
                 speed,
                 v_set,
             );
@@ -251,7 +248,6 @@ pub enum Input {
     VacuumBrake(bool),
     Kickdown(bool),
     Failure(bool),
-    Vdc(bool),
 }
 impl Input {
     fn into(self, instant: Instant) -> RuntimeInput {
@@ -270,8 +266,6 @@ impl Input {
             Input::Kickdown(false) => RuntimeInput::Kickdown(Kickdown::Deactivated, instant),
             Input::Failure(true) => RuntimeInput::Failure(Failure::Recovered, instant),
             Input::Failure(false) => RuntimeInput::Failure(Failure::Entering, instant),
-            Input::Vdc(true) => RuntimeInput::Vdc(VdcState::On, instant),
-            Input::Vdc(false) => RuntimeInput::Vdc(VdcState::Off, instant),
         }
     }
 }
@@ -327,7 +321,6 @@ async fn main() {
         INIT,
         input_stream,
         RuntimeInit {
-            vdc: VdcState::On,
             vacuum_brake: VacuumBrakeState::BelowMinLevel,
             set_speed: 0.0,
             speed: 0.0,

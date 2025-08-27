@@ -40,7 +40,7 @@ fn should_compile_automaton() {
         }
     };
     let (ast, mut ctx) = top.init();
-    let tokens = compiler_top::into_token_stream(ast, &mut ctx);
+    let tokens = compiler_top::into_token_stream_res(ast, &mut ctx).unwrap();
     if let Some(path) = ctx.conf.dump_code {
         compiler_top::dump_code(&path, &tokens).unwrap();
     }

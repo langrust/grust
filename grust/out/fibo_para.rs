@@ -81,8 +81,10 @@ impl grust::core::Component for FibCallState {
             (next_o)
         };
         let next_o_1 = {
-            let NextOutput { next_o } =
-                <NextState as grust::core::Component>::step(&mut self.next_1, NextInput { i: fib });
+            let NextOutput { next_o } = <NextState as grust::core::Component>::step(
+                &mut self.next_1,
+                NextInput { i: next_o },
+            );
             (next_o)
         };
         self.last_next_o_1 = next_o_1;

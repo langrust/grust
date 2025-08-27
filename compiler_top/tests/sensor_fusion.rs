@@ -36,7 +36,7 @@ fn should_compile_this_quickly() {
             nqz = r * qz;
         }
 
-        component integral_feedback(x : float, halfx: float) -> (integralFB : float) {
+        component integral_feedback(halfx: float) -> (integralFB : float) {
             let twoKi: float = 2.0 * 0.001;
             let estimator_attitude_update_dt: float = 1.0 / 250.0;
 
@@ -66,9 +66,9 @@ fn should_compile_this_quickly() {
 
             match (! ((ax, ay, az) == (0.0, 0.0, 0.0))) {
                 true => {
-                    let gx1: float = grx + integral_feedback(grx, halfex) + (twoKp * halfex);
-                    let gy1: float = gry + integral_feedback(gry, halfey) + (twoKp * halfey);
-                    let gz1: float = grz + integral_feedback(grz, halfez) + (twoKp * halfez);
+                    let gx1: float = grx + integral_feedback(halfex) + (twoKp * halfex);
+                    let gy1: float = gry + integral_feedback(halfey) + (twoKp * halfey);
+                    let gz1: float = grz + integral_feedback(halfez) + (twoKp * halfez);
                 },
                 false => {
                     let gx1: float = grx;
@@ -90,7 +90,7 @@ fn should_compile_this_quickly() {
         }
     };
     let (ast, mut ctx) = top.init();
-    let tokens = compiler_top::into_token_stream(ast, &mut ctx);
+    let tokens = compiler_top::into_token_stream_res(ast, &mut ctx).unwrap();
     if let Some(path) = ctx.conf.dump_code {
         compiler_top::dump_code(&path, &tokens).unwrap();
     }

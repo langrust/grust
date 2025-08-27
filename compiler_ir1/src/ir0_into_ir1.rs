@@ -16,7 +16,7 @@ impl Ir0IntoIr1<ctx::Simple<'_>> for Ast {
 
     fn into_ir1(self, ctx: &mut ctx::Simple) -> TRes<Self::Ir1> {
         // store elements in symbol table
-        self.store(ctx.ctx0, ctx.errors)?;
+        self.store(ctx)?;
 
         let (mut typedefs, mut functions, mut components, mut imports, mut exports, mut services) = (
             Vec::with_capacity(20),
@@ -584,7 +584,9 @@ impl Ir0IntoIr1<ctx::Simple<'_>> for ir0::Function {
                     returned = Some(expression.into_ir1(&mut ctx.add_pat_loc(None, loc))?);
                 }
                 ir0::Stmt::Log(log_stmt) => {
-                    let pat = log_stmt.pattern.into_ir1(&mut ctx.add_loc(loc))?;
+                    let pat = log_stmt
+                        .pattern
+                        .into_ir1(&mut ctx.add_gen_loc(false, loc))?;
                     logs.extend(pat.identifiers());
                 }
             }
@@ -937,7 +939,7 @@ impl Ir0IntoIr1<ctx::Simple<'_>> for ir0::Eq {
 
         // get idents defined by the equation
         let mut defined_idents = HashMap::new();
-        self.get_idents(&mut defined_idents, ctx.ctx0, ctx.errors)?;
+        self.get_idents(&mut defined_idents, ctx)?;
 
         match self {
             Eq::LocalDef(LetDecl {
@@ -947,7 +949,7 @@ impl Ir0IntoIr1<ctx::Simple<'_>> for ir0::Eq {
             })
             | Eq::OutputDef(Instantiation { expr, pattern, .. }) => {
                 let expr = expr.into_ir1(&mut ctx.add_pat_loc(Some(&pattern), loc))?;
-                let pattern = pattern.into_ir1(&mut ctx.add_loc(loc))?;
+                let pattern = pattern.into_ir1(&mut ctx.add_gen_loc(false, loc))?;
                 Ok(ir1::Stmt { pattern, expr, loc })
             }
             Eq::MatchEq(MatchEq { expr, arms, .. }) => {
@@ -957,7 +959,7 @@ impl Ir0IntoIr1<ctx::Simple<'_>> for ir0::Eq {
                         defined_idents.len(),
                         defined_idents
                             .values()
-                            .map(|pat| pat.clone().into_ir1(&mut ctx.add_loc(loc))),
+                            .map(|pat| pat.clone().into_ir1(&mut ctx.add_gen_loc(true, loc))),
                     );
                     if elements.len() == 1 {
                         elements.pop().unwrap()
@@ -980,13 +982,13 @@ impl Ir0IntoIr1<ctx::Simple<'_>> for ir0::Eq {
                         ctx.local();
 
                         // set local context: pattern idents + equations' idents
-                        pattern.store(ctx.ctx0, ctx.errors)?;
+                        pattern.store(ctx)?;
                         let mut idents = HashMap::new();
                         equations
                             .iter()
                             .map(|equation| {
                                 // store equations' idents in the local context
-                                equation.store_idents(true, &mut idents, ctx.ctx0, ctx.errors)
+                                equation.store_idents(true, &mut idents, ctx)
                             })
                             .collect_res()?;
 
@@ -1079,7 +1081,7 @@ impl Ir0IntoIr1<ctx::Simple<'_>> for ir0::ReactEq {
 
         // get idents defined by the equation
         let mut defined_idents = HashMap::new();
-        self.get_idents(&mut defined_idents, ctx.ctx0, ctx.errors)?;
+        self.get_idents(&mut defined_idents, ctx)?;
 
         match self {
             ReactEq::LocalDef(LetDecl {
@@ -1089,7 +1091,7 @@ impl Ir0IntoIr1<ctx::Simple<'_>> for ir0::ReactEq {
             })
             | ReactEq::OutputDef(Instantiation { expr, pattern, .. }) => {
                 let (opt_init, expr) = expr.into_ir1(&mut ctx.add_pat_loc(Some(&pattern), loc))?;
-                let pattern = pattern.into_ir1(&mut ctx.add_loc(loc))?;
+                let pattern = pattern.into_ir1(&mut ctx.add_gen_loc(false, loc))?;
                 Ok(Either::Left((
                     opt_init.map(|init| vec![init]),
                     Some(stream::Stmt { pattern, expr, loc }),
@@ -1102,7 +1104,7 @@ impl Ir0IntoIr1<ctx::Simple<'_>> for ir0::ReactEq {
                         defined_idents.len(),
                         defined_idents
                             .values()
-                            .map(|pat| pat.clone().into_ir1(&mut ctx.add_loc(loc))),
+                            .map(|pat| pat.clone().into_ir1(&mut ctx.add_gen_loc(true, loc))),
                     );
                     if elements.len() == 1 {
                         elements.pop().unwrap()
@@ -1126,18 +1128,13 @@ impl Ir0IntoIr1<ctx::Simple<'_>> for ir0::ReactEq {
                                 ctx.local();
 
                                 // set local context: pattern idents + equations' idents
-                                pattern.store(ctx.ctx0, ctx.errors)?;
+                                pattern.store(ctx)?;
                                 let mut idents = HashMap::new();
                                 equations
                                     .iter()
                                     .map(|equation| {
                                         // store equations' idents in the local context
-                                        equation.store_idents(
-                                            true,
-                                            &mut idents,
-                                            ctx.ctx0,
-                                            ctx.errors,
-                                        )
+                                        equation.store_idents(true, &mut idents, ctx)
                                     })
                                     .collect_res()?;
 
@@ -1234,12 +1231,8 @@ impl Ir0IntoIr1<ctx::Simple<'_>> for ir0::ReactEq {
                     let mut idx = 0;
                     for arm in &arms {
                         let prev_idx = idx;
-                        arm.pattern.place_events(
-                            &mut events_indices,
-                            &mut idx,
-                            ctx.ctx0,
-                            ctx.errors,
-                        )?;
+                        arm.pattern
+                            .place_events(&mut events_indices, &mut idx, ctx)?;
                         for _ in prev_idx..idx {
                             // put default pattern for unlooked events
                             dflt_event_elems.push(Pattern::new(
@@ -1261,7 +1254,7 @@ impl Ir0IntoIr1<ctx::Simple<'_>> for ir0::ReactEq {
                         for ir0::equation::Instantiation { pattern, expr, .. } in equations {
                             pattern.get_inits(&mut init_idents);
                             expr.check_is_constant(ctx.ctx0, ctx.errors)?;
-                            let ir1_pat = pattern.into_ir1(&mut ctx.add_loc(loc))?;
+                            let ir1_pat = pattern.into_ir1(&mut ctx.add_gen_loc(false, loc))?;
                             let ir1_expr = expr.into_ir1(&mut ctx.add_pat_loc(None, loc))?;
                             init_stmts.push(stream::InitStmt {
                                 pattern: ir1_pat,
@@ -1315,8 +1308,7 @@ impl Ir0IntoIr1<ctx::Simple<'_>> for ir0::ReactEq {
                                 let opt_rising_edges = event_pattern.create_tuple_pattern(
                                     &mut elements,
                                     &events_indices,
-                                    ctx.ctx0,
-                                    ctx.errors,
+                                    ctx,
                                 )?;
                                 let matched = Pattern::new(pat_loc, pattern::Kind::tuple(elements));
 
@@ -1351,7 +1343,7 @@ impl Ir0IntoIr1<ctx::Simple<'_>> for ir0::ReactEq {
                                 .iter()
                                 .map(|equation| {
                                     // store equations' idents in the local context
-                                    equation.store_idents(true, &mut idents, ctx.ctx0, ctx.errors)
+                                    equation.store_idents(true, &mut idents, ctx)
                                 })
                                 .collect_res()?;
 
@@ -1398,7 +1390,7 @@ impl Ir0IntoIr1<ctx::Simple<'_>> for ir0::ReactEq {
                     )
                 };
 
-                let pattern = def_eq_pat.into_ir1(&mut ctx.add_loc(&loc))?;
+                let pattern = def_eq_pat.into_ir1(&mut ctx.add_gen_loc(true, loc))?;
 
                 Ok(Either::Left((
                     init_stmts,
@@ -1411,7 +1403,9 @@ impl Ir0IntoIr1<ctx::Simple<'_>> for ir0::ReactEq {
             }
             ReactEq::Init(init_ident) => {
                 init_ident.expr.check_is_constant(ctx.ctx0, ctx.errors)?;
-                let ir1_pat = init_ident.pattern.into_ir1(&mut ctx.add_loc(loc))?;
+                let ir1_pat = init_ident
+                    .pattern
+                    .into_ir1(&mut ctx.add_gen_loc(false, loc))?;
                 let ir1_expr = init_ident.expr.into_ir1(&mut ctx.add_pat_loc(None, loc))?;
                 let init_stmt = stream::InitStmt {
                     pattern: ir1_pat,
@@ -1421,7 +1415,9 @@ impl Ir0IntoIr1<ctx::Simple<'_>> for ir0::ReactEq {
                 Ok(Either::Left((Some(vec![init_stmt]), None)))
             }
             ReactEq::Log(log_stmt) => {
-                let pat = log_stmt.pattern.into_ir1(&mut ctx.add_loc(loc))?;
+                let pat = log_stmt
+                    .pattern
+                    .into_ir1(&mut ctx.add_gen_loc(false, loc))?;
                 Ok(Either::Right(pat.identifiers()))
             }
         }
@@ -1634,8 +1630,8 @@ mod simple_expr_impl {
                     self.arms.len(),
                     self.arms.into_iter().map(|arm| {
                         ctx.local();
-                        arm.pattern.store(ctx.ctx0, ctx.errors)?;
-                        let pattern = arm.pattern.into_ir1(&mut ctx.remove_pat())?;
+                        arm.pattern.store(&mut ctx.rm_pat_loc())?;
+                        let pattern = arm.pattern.into_ir1(&mut ctx.rm_pat())?;
                         let guard = arm.guard.map(|expr| expr.into_ir1(ctx)).transpose()?;
                         let expr = arm.expr.into_ir1(ctx)?;
                         ctx.global();
@@ -1780,7 +1776,7 @@ mod simple_expr_impl {
             let inputs = res_vec!(
                 self.inputs.len(),
                 self.inputs.into_iter().map(|(input_name, typing)| {
-                    let typing = typing.into_ir1(&mut ctx.remove_pat())?;
+                    let typing = typing.into_ir1(&mut ctx.rm_pat())?;
                     ctx.ctx0
                         .insert_local_ident(input_name, Some(typing), true, ctx.errors)
                 }),
@@ -1995,7 +1991,7 @@ mod stmt_pattern_impl {
                 // insert local identifier to define the signal locally
                 let def_id =
                     ctx.ctx0
-                        .insert_local_ident(ident.clone(), Some(typ), true, ctx.errors)?;
+                        .insert_generated_ident(ident.clone(), Some(typ), true, ctx.errors)?;
                 // construct pattern of defined idents + their default expression
                 let pat = ir1::stmt::Pattern::new(ident.loc(), ir1::stmt::Kind::ident(def_id));
                 let expr =
@@ -2084,20 +2080,23 @@ mod stmt_pattern_impl {
         }
     }
 
-    impl Ir0IntoIr1<ir1::ctx::WithLoc<'_>> for Typed {
+    impl Ir0IntoIr1<ir1::ctx::GenLoc<'_>> for Typed {
         type Ir1 = ir1::stmt::Kind;
 
-        fn into_ir1(self, ctx: &mut ir1::ctx::WithLoc) -> TRes<ir1::stmt::Kind> {
+        fn into_ir1(self, ctx: &mut ir1::ctx::GenLoc) -> TRes<ir1::stmt::Kind> {
             let id = ctx.ctx0.get_identifier_id(&self.ident, false, ctx.errors)?;
-            let typ = self.typ.into_ir1(ctx)?;
+            if ctx.codegen {
+                ctx.ctx0.set_codegen(id)
+            }
+            let typ = self.typ.into_ir1(&mut ctx.rm_loc())?;
             Ok(ir1::stmt::Kind::Typed { id, typ })
         }
     }
 
-    impl Ir0IntoIr1<ir1::ctx::WithLoc<'_>> for Tuple {
+    impl Ir0IntoIr1<ir1::ctx::GenLoc<'_>> for Tuple {
         type Ir1 = ir1::stmt::Kind;
 
-        fn into_ir1(self, ctx: &mut ir1::ctx::WithLoc) -> TRes<ir1::stmt::Kind> {
+        fn into_ir1(self, ctx: &mut ir1::ctx::GenLoc) -> TRes<ir1::stmt::Kind> {
             Ok(ir1::stmt::Kind::tuple(res_vec!(
                 self.elements.len(),
                 self.elements
@@ -2107,14 +2106,17 @@ mod stmt_pattern_impl {
         }
     }
 
-    impl Ir0IntoIr1<ir1::ctx::WithLoc<'_>> for ir0::stmt::Pattern {
+    impl Ir0IntoIr1<ir1::ctx::GenLoc<'_>> for ir0::stmt::Pattern {
         type Ir1 = ir1::stmt::Pattern;
 
-        fn into_ir1(self, ctx: &mut ir1::ctx::WithLoc) -> TRes<Self::Ir1> {
+        fn into_ir1(self, ctx: &mut ir1::ctx::GenLoc) -> TRes<Self::Ir1> {
             use ir0::stmt::Pattern::*;
             let kind = match self {
                 Identifier(ident) => {
                     let id = ctx.ctx0.get_identifier_id(&ident, false, ctx.errors)?;
+                    if ctx.codegen {
+                        ctx.ctx0.set_codegen(id)
+                    }
                     ir1::stmt::Kind::Identifier { id }
                 }
                 Typed(pattern) => pattern.into_ir1(ctx)?,
@@ -2139,11 +2141,13 @@ impl Ir0IntoIr1<ir1::ctx::Simple<'_>> for ir0::stmt::LetDecl<ir0::Expr> {
         let loc = self.loc();
         // stmts should be ordered in functions
         // then patterns are stored in order
-        self.typed_pattern.store(true, ctx.ctx0, ctx.errors)?;
+        self.typed_pattern.store(true, ctx)?;
         let expr = self
             .expr
             .into_ir1(&mut ctx.add_pat_loc(Some(&self.typed_pattern), loc))?;
-        let pattern = self.typed_pattern.into_ir1(&mut ctx.add_loc(loc))?;
+        let pattern = self
+            .typed_pattern
+            .into_ir1(&mut ctx.add_gen_loc(false, loc))?;
 
         Ok(ir1::Stmt { pattern, expr, loc })
     }
@@ -2191,8 +2195,7 @@ mod stream_impl {
                     arm.pattern.place_events(
                         &mut events_indices,
                         &mut idx,
-                        ctx.ctx0,
-                        ctx.errors,
+                        &mut ctx.rm_pat_loc(),
                     )?;
                     for _ in prev_idx..idx {
                         // put default pattern for unlooked events
@@ -2212,7 +2215,9 @@ mod stream_impl {
                 let mut init_idents = vec![];
                 def_eq_pat.get_inits(&mut init_idents);
                 expr.check_is_constant(ctx.ctx0, ctx.errors)?;
-                let ir1_pat = def_eq_pat.clone().into_ir1(&mut ctx.remove_pat())?;
+                let ir1_pat = def_eq_pat
+                    .clone()
+                    .into_ir1(&mut ctx.rm_pat().add_gen(false))?;
                 let ir1_expr = expr.into_ir1(ctx)?;
                 let init_stmt = ir1::stream::InitStmt {
                     pattern: ir1_pat,
@@ -2234,7 +2239,7 @@ mod stream_impl {
                 // transform guard and equations into [ir1] with local context
                 let guard = None;
                 // give last value of the undefined identifiers
-                let ctx = &mut ctx.remove_pat_loc();
+                let ctx = &mut ctx.rm_pat_loc();
                 let stmts = def_eq_pat
                     .default_stmt(&HashMap::new(), &init_idents, ctx)?
                     .collect_vec();
@@ -2266,8 +2271,7 @@ mod stream_impl {
                             let opt_rising_edges = event_pattern.create_tuple_pattern(
                                 &mut elements,
                                 &events_indices,
-                                ctx.ctx0,
-                                ctx.errors,
+                                &mut ctx.rm_pat_loc(),
                             )?;
                             let matched = Pattern::new(pat_loc, pattern::Kind::tuple(elements));
 

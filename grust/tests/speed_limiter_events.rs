@@ -12,7 +12,6 @@ grust! {
     import signal   car::adas::vacuum_brake             : VacuumBrakeState;
     import event    car::adas::kickdown                 : Kickdown;
     import event    car::adas::failure                  : Failure;
-    import signal   car::adas::vdc                      : VdcState;
 
     export event    car::adas::speed_limiter::in_regulation : bool;
     export signal   car::adas::speed_limiter::v_set         : float;
@@ -119,7 +118,6 @@ grust! {
         vacuum_brake_state: VacuumBrakeState,
         kickdown: Kickdown?,
         failure: Failure?,
-        vdc_disabled: VdcState,
         speed: float,
         v_set: float,
     ) -> (
@@ -217,7 +215,6 @@ grust! {
             vacuum_brake,
             kickdown,
             failure,
-            vdc,
             speed,
             v_set,
         );

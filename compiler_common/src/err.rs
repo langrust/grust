@@ -255,6 +255,11 @@ pub enum ErrorKind {
         /// Component's name.
         component: String,
     },
+    /// Unused import error.
+    UnusedImport {
+        /// Import's name.
+        name: String,
+    },
     /// Unused identifier error.
     UnusedIdent {
         /// Component's name.
@@ -348,6 +353,14 @@ mk_new! { impl ErrorKind =>
     UnknownField: unknown_field {
         structure_name: impl Into<String> = structure_name.into(),
         field_name: impl Into<String> = field_name.into(),
+    }
+
+    UnusedImport: unused_import {
+        name: impl Into<String> = name.into(),
+    }
+    UnusedIdent: unused_ident {
+        ident: impl Into<String> = ident.into(),
+        component: impl Into<String> = component.into(),
     }
 
     NotCausalIdent : ident_non_causal {
@@ -463,6 +476,9 @@ impl Display for ErrorKind {
             NotCausalComponent { component } => write!(f, "component `{component}` is not causal"),
             UnusedIdent { ident, component } => {
                 write!(f, "ident `{ident}` is unused in component `{component}`")
+            }
+            UnusedImport { name } => {
+                write!(f, "import `{name}` is unused in this program")
             }
         }
     }

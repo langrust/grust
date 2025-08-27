@@ -112,6 +112,7 @@ impl File {
     pub fn normalize(&mut self, ctx: &mut Ctx, errors: &mut Vec<Error>) -> TRes<()> {
         self.normal_form(ctx);
         self.generate_flows_dependency_graphs();
+        self.no_unused(ctx).dewrap(errors)?;
         self.memorize(ctx).dewrap(errors)?;
         self.inline_when_needed(ctx);
         self.schedule();

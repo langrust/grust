@@ -18,7 +18,7 @@ grust! {
 
     component fib_call() -> (fib: int) {
         let next_o: int = next(fib);
-        fib = semi_fib(fib);
+        fib = semi_fib(next_o);
     }
 
     component fib() -> (fib: int) {

@@ -74,7 +74,7 @@ fn should_compile_para() {
         }
     };
     let (ast, mut ctx) = top.init();
-    let tokens = compiler_top::into_token_stream(ast, &mut ctx);
+    let tokens = compiler_top::into_token_stream_res(ast, &mut ctx).unwrap();
     if let Some(path) = ctx.conf.dump_code {
         compiler_top::dump_code(&path, &tokens).unwrap();
     }
@@ -130,7 +130,7 @@ fn should_compile_para_threads() {
         }
     };
     let (ast, mut ctx) = top.init();
-    let tokens = compiler_top::into_token_stream(ast, &mut ctx);
+    let tokens = compiler_top::into_token_stream_res(ast, &mut ctx).unwrap();
     if let Some(path) = ctx.conf.dump_code {
         compiler_top::dump_code(&path, &tokens).unwrap();
     }
@@ -186,7 +186,7 @@ fn should_compile_para_rayon1() {
         }
     };
     let (ast, mut ctx) = top.init();
-    let tokens = compiler_top::into_token_stream(ast, &mut ctx);
+    let tokens = compiler_top::into_token_stream_res(ast, &mut ctx).unwrap();
     if let Some(path) = ctx.conf.dump_code {
         compiler_top::dump_code(&path, &tokens).unwrap();
     }
@@ -242,7 +242,7 @@ fn should_compile_para_rayon2() {
         }
     };
     let (ast, mut ctx) = top.init();
-    let tokens = compiler_top::into_token_stream(ast, &mut ctx);
+    let tokens = compiler_top::into_token_stream_res(ast, &mut ctx).unwrap();
     if let Some(path) = ctx.conf.dump_code {
         compiler_top::dump_code(&path, &tokens).unwrap();
     }
@@ -298,7 +298,7 @@ fn should_compile_rayon3() {
         }
     };
     let (ast, mut ctx) = top.init();
-    let tokens = compiler_top::into_token_stream(ast, &mut ctx);
+    let tokens = compiler_top::into_token_stream_res(ast, &mut ctx).unwrap();
     if let Some(path) = ctx.conf.dump_code {
         compiler_top::dump_code(&path, &tokens).unwrap();
     }
@@ -354,7 +354,7 @@ fn should_compile_para_mixed() {
         }
     };
     let (ast, mut ctx) = top.init();
-    let tokens = compiler_top::into_token_stream(ast, &mut ctx);
+    let tokens = compiler_top::into_token_stream_res(ast, &mut ctx).unwrap();
     if let Some(path) = ctx.conf.dump_code {
         compiler_top::dump_code(&path, &tokens).unwrap();
     }
@@ -392,7 +392,7 @@ fn should_compile_para_custom() {
 
         component fib_call() -> (fib: int) {
             let next_o: int = next(fib);
-            fib = semi_fib(fib);
+            fib = semi_fib(next_o);
         }
 
         component fib() -> (fib: int) {
@@ -402,7 +402,7 @@ fn should_compile_para_custom() {
         }
     };
     let (ast, mut ctx) = top.init();
-    let tokens = compiler_top::into_token_stream(ast, &mut ctx);
+    let tokens = compiler_top::into_token_stream_res(ast, &mut ctx).unwrap();
     if let Some(path) = ctx.conf.dump_code {
         compiler_top::dump_code(&path, &tokens).unwrap();
     }

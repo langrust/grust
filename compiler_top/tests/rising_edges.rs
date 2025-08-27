@@ -10,7 +10,7 @@ fn should_compile_rising_edges() {
             d: float,
             x: int?,
         ) {
-            c = when { init => 0, a? => a };
+            c = when { init => 0, w? => w, a? => a };
             d = when { init => 0., let _ = y? => 0.1 };
             let w: int? = when { v > 50 => emit v + (last c) };
             when {
@@ -32,7 +32,7 @@ fn should_compile_rising_edges() {
         }
     };
     let (ast, mut ctx) = top.init();
-    let tokens = compiler_top::into_token_stream(ast, &mut ctx);
+    let tokens = compiler_top::into_token_stream_res(ast, &mut ctx).unwrap();
     if let Some(path) = ctx.conf.dump_code {
         compiler_top::dump_code(&path, &tokens).unwrap();
     }

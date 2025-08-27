@@ -56,17 +56,8 @@ impl Component {
     pub fn causal(&self, ctx: &Ctx, errors: &mut Vec<Error>) -> TRes<()> {
         match &self.body_or_path {
             Either::Left(body) => {
-                // construct component's subgraph containing only 0-label weight
-                let mut subgraph = body.graph.clone();
-                body.graph
-                    .all_edges()
-                    .for_each(|(from, to, label)| match label {
-                        Label::Weight(0) => (),
-                        _ => {
-                            let _label = subgraph.remove_edge(from, to);
-                            debug_assert_ne!(_label, Some(Label::Weight(0)))
-                        }
-                    });
+                // 0-dependency graph
+                let subgraph = body.zero_dependency_graph();
 
                 // if a schedule exists, then the component is causal
                 let res = graph::toposort(&subgraph, None);
@@ -566,6 +557,21 @@ impl ComponentBody {
         self.graph = graph;
     }
 
+    /// Constructs component's 0-dependency graph.
+    fn zero_dependency_graph(&self) -> DiGraphMap<usize, Label> {
+        let mut subgraph = self.graph.clone();
+        self.graph
+            .all_edges()
+            .for_each(|(from, to, label)| match label {
+                Label::Weight(0) => (),
+                _ => {
+                    let _label = subgraph.remove_edge(from, to);
+                    debug_assert_ne!(_label, Some(Label::Weight(0)))
+                }
+            });
+        subgraph
+    }
+
     /// Inline component application when it is needed.
     ///
     /// Inlining needed for "shifted causality loop".
@@ -573,12 +579,16 @@ impl ComponentBody {
         // create identifier creator containing the idents
         let mut identifier_creator = IdentifierCreator::from(self.get_idents_names(ctx));
 
+        // 0-dependency graph
+        let subgraph = self.zero_dependency_graph();
+
         // compute new statements for the component
         let mut new_statements: Vec<stream::Stmt> = vec![];
         std::mem::take(&mut self.statements)
             .into_iter()
             .for_each(|statement| {
                 let mut retrieved_statements = statement.inline_when_needed_recursive(
+                    &subgraph,
                     &mut self.memory,
                     &mut identifier_creator,
                     ctx,

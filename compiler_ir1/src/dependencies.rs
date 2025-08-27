@@ -189,9 +189,9 @@ impl ComponentSignature {
                     }
                     // update stack: not already seen && no path with all the idents in stack
                     if !seen.contains(&depending)
-                        && stack.iter().all(|id| {
-                            !petgraph::algo::has_path_connecting(graph, depending, *id, None)
-                        })
+                        && stack
+                            .iter()
+                            .all(|id| !graph::has_path_connecting(graph, depending, *id, None))
                     {
                         stack.push(depending);
                     }
@@ -216,12 +216,11 @@ impl ComponentSignature {
         let mut reduced_graph = DiGraphMap::new();
 
         // add output dependencies over inputs in reduced graph
-        ctx.get_comp_outputs(self.id)
-            .iter()
-            .zip(ctx.get_comp_inputs(self.id))
-            .for_each(|((_, output_id), input_id)| {
+        for (_, output_id) in ctx.get_comp_outputs(self.id) {
+            for input_id in ctx.get_comp_inputs(self.id) {
                 add_edge(&mut reduced_graph, *output_id, *input_id, Label::Weight(0));
-            });
+            }
+        }
 
         self.reduced_graph = reduced_graph;
         ctx.reduced_graphs

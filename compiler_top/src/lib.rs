@@ -34,32 +34,15 @@ pub fn handle_tokens(tokens: TokenStream) -> TokenStream {
 /// Creates RustAST from GRust file using nightly funtion.
 #[cfg(feature = "diagnostics")]
 pub fn into_token_stream(ast: Ast, ctx: &mut ir0::Ctx) -> TokenStream2 {
-    let mut stats = Stats::new();
-    let ir1 = match ir1::from_ast_timed(ast, ctx, stats.as_mut()) {
-        Ok(pair) => pair,
+    match into_token_stream_res(ast, ctx) {
+        Ok(tokens) => tokens,
         Err(errors) => {
             for error in errors {
                 error.emit();
             }
-            return parse_quote! {};
+            parse_quote! {}
         }
-    };
-    if let Some(filepath) = &ctx.conf.dump_graph {
-        ir1.dump_graph(filepath.value(), ctx);
     }
-    let ir2 = stats.timed("ir1 → ir2", || ir1.into_ir2(ctx));
-    let rust = stats.timed("codegen (ir2 → rust tokens)", || {
-        ir2.prepare_tokens(ctx).to_token_stream()
-    });
-    if let Some(stats) = stats.pretty(&ctx.conf) {
-        println!("Stats:\n\n{}", stats);
-    }
-    let mut tokens = TokenStream2::new();
-    {
-        use quote::TokenStreamExt;
-        tokens.append_all(rust);
-    }
-    tokens
 }
 
 /// Compiles input GRust tokens into output Rust tokens using non nightly function.
@@ -80,16 +63,21 @@ pub fn handle_tokens(tokens: TokenStream) -> TokenStream {
 /// Creates RustAST from GRust file using nightly funtion.
 #[cfg(not(feature = "diagnostics"))]
 pub fn into_token_stream(ast: Ast, ctx: &mut ir0::Ctx) -> TokenStream2 {
-    let mut stats = Stats::new();
-    let ir1 = match ir1::from_ast_timed(ast, ctx, stats.as_mut()) {
-        Ok(pair) => pair,
+    match into_token_stream_res(ast, ctx) {
+        Ok(tokens) => tokens,
         Err(errors) => {
             for error in errors {
                 println!("compilation error detected: {}", error.0);
             }
-            return parse_quote! {};
+            parse_quote! {}
         }
-    };
+    }
+}
+
+/// Creates RustAST from GRust file that can fail.
+pub fn into_token_stream_res(ast: Ast, ctx: &mut ir0::Ctx) -> Result<TokenStream2, Vec<Error>> {
+    let mut stats = Stats::new();
+    let ir1 = ir1::from_ast_timed(ast, ctx, stats.as_mut())?;
     if let Some(filepath) = &ctx.conf.dump_graph {
         ir1.dump_graph(filepath.value(), ctx);
     }
@@ -105,7 +93,7 @@ pub fn into_token_stream(ast: Ast, ctx: &mut ir0::Ctx) -> TokenStream2 {
         use quote::TokenStreamExt;
         tokens.append_all(rust);
     }
-    tokens
+    Ok(tokens)
 }
 
 /// Writes the generated code at the given filepath.

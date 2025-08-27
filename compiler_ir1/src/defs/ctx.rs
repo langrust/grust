@@ -50,6 +50,23 @@ impl ops::DerefMut for PatLoc<'_> {
         self.ctx0
     }
 }
+pub struct GenLoc<'a> {
+    pub codegen: bool,
+    pub loc: Loc,
+    pub ctx0: &'a mut Ctx,
+    pub errors: &'a mut Vec<Error>,
+}
+impl ops::Deref for GenLoc<'_> {
+    type Target = Ctx;
+    fn deref(&self) -> &Self::Target {
+        self.ctx0
+    }
+}
+impl ops::DerefMut for GenLoc<'_> {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        self.ctx0
+    }
+}
 impl<'a> Simple<'a> {
     pub fn new(ctx0: &'a mut Ctx, errors: &'a mut Vec<Error>) -> Self {
         Self { ctx0, errors }
@@ -64,6 +81,9 @@ impl<'a> Simple<'a> {
     ) -> PatLoc<'b> {
         PatLoc::new(pat, loc, self.ctx0, self.errors)
     }
+    pub fn add_gen_loc(&mut self, codegen: bool, loc: impl Into<Loc>) -> GenLoc<'_> {
+        GenLoc::new(codegen, loc, self.ctx0, self.errors)
+    }
 }
 impl<'a> WithLoc<'a> {
     pub fn new(loc: Loc, ctx0: &'a mut Ctx, errors: &'a mut Vec<Error>) -> Self {
@@ -74,6 +94,9 @@ impl<'a> WithLoc<'a> {
     }
     pub fn add_pat<'b>(&'b mut self, pat: Option<&'b ir0::stmt::Pattern>) -> PatLoc<'b> {
         PatLoc::new(pat, self.loc, self.ctx0, self.errors)
+    }
+    pub fn add_gen(&mut self, codegen: bool) -> GenLoc<'_> {
+        GenLoc::new(codegen, self.loc, self.ctx0, self.errors)
     }
 }
 impl<'a> PatLoc<'a> {
@@ -90,10 +113,10 @@ impl<'a> PatLoc<'a> {
             errors,
         }
     }
-    pub fn remove_pat(&mut self) -> WithLoc {
+    pub fn rm_pat(&mut self) -> WithLoc {
         WithLoc::new(self.loc, self.ctx0, self.errors)
     }
-    pub fn remove_pat_loc(&mut self) -> Simple<'_> {
+    pub fn rm_pat_loc(&mut self) -> Simple<'_> {
         Simple::new(self.ctx0, self.errors)
     }
     pub fn set_pat(
@@ -101,6 +124,24 @@ impl<'a> PatLoc<'a> {
         pat: Option<&'a ir0::stmt::Pattern>,
     ) -> Option<&'a ir0::stmt::Pattern> {
         std::mem::replace(&mut self.pat, pat)
+    }
+}
+impl<'a> GenLoc<'a> {
+    pub fn new(
+        codegen: bool,
+        loc: impl Into<Loc>,
+        ctx0: &'a mut Ctx,
+        errors: &'a mut Vec<Error>,
+    ) -> Self {
+        Self {
+            codegen,
+            loc: loc.into(),
+            ctx0,
+            errors,
+        }
+    }
+    pub fn rm_loc(&mut self) -> WithLoc<'_> {
+        WithLoc::new(self.loc, self.ctx0, self.errors)
     }
 }
 
