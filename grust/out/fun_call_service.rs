@@ -45,8 +45,12 @@ pub mod runtime {
         output: grust::futures::channel::mpsc::Sender<O>,
     }
     impl Runtime {
-        pub fn new(output: grust::futures::channel::mpsc::Sender<O>) -> Runtime {
-            let test = test_service::TestService::init(output.clone());
+        pub fn new(
+            _grust_reserved_init_instant: std::time::Instant,
+            output: grust::futures::channel::mpsc::Sender<O>,
+        ) -> Runtime {
+            let test =
+                test_service::TestService::init(_grust_reserved_init_instant, output.clone());
             Runtime { test, output }
         }
         pub async fn run_loop(
@@ -151,12 +155,15 @@ pub mod runtime {
             output: grust::futures::channel::mpsc::Sender<O>,
         }
         impl TestService {
-            pub fn init(output: grust::futures::channel::mpsc::Sender<O>) -> TestService {
+            pub fn init(
+                _grust_reserved_init_instant: std::time::Instant,
+                output: grust::futures::channel::mpsc::Sender<O>,
+            ) -> TestService {
                 let context = Context::init();
                 let delayed = true;
                 let input_store = Default::default();
                 TestService {
-                    begin: std::time::Instant::now(),
+                    begin: _grust_reserved_init_instant,
                     context,
                     delayed,
                     input_store,
@@ -230,7 +237,7 @@ pub mod runtime {
 }
 use grust::futures::{Stream, StreamExt};
 pub fn run(
-    INIT: std::time::Instant,
+    _grust_reserved_init_instant: std::time::Instant,
     input_stream: impl Stream<Item = runtime::RuntimeInput> + Send + 'static,
     init_signals: runtime::RuntimeInit,
 ) -> grust::futures::channel::mpsc::Receiver<runtime::RuntimeOutput> {
@@ -241,9 +248,11 @@ pub fn run(
         input_stream,
         runtime::RuntimeInput::order,
     );
-    let service = runtime::Runtime::new(output_sink);
+    let service = runtime::Runtime::new(_grust_reserved_init_instant, output_sink);
     grust::tokio::spawn(async move {
-        let result = service.run_loop(INIT, prio_stream, init_signals).await;
+        let result = service
+            .run_loop(_grust_reserved_init_instant, prio_stream, init_signals)
+            .await;
         assert!(result.is_ok())
     });
     output_stream

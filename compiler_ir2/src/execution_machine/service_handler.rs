@@ -142,8 +142,9 @@ impl ToTokens for ServiceHandlerTokens<'_> {
                 quote! { delayed: bool },
                 quote! { input_store: #service_store_ident },
             ];
+            let init_instant = Ident::init_instant_var();
             let mut field_values = vec![
-                quote! { begin: std::time::Instant::now() },
+                quote! { begin: #init_instant },
                 quote! { context },
                 quote! { delayed },
                 quote! { input_store },
@@ -215,6 +216,7 @@ impl ToTokens for ServiceHandlerTokens<'_> {
                             }
                         },
                     );
+                    let init_instant = Ident::init_instant_var();
                     let timer = if self.has_timer {
                         quote! {timer: grust::futures::channel::mpsc::Sender<(T, std::time::Instant)>,}
                     } else {
@@ -222,6 +224,7 @@ impl ToTokens for ServiceHandlerTokens<'_> {
                     };
                     quote! {
                         pub fn init(
+                            #init_instant: std::time::Instant,
                             output: grust::futures::channel::mpsc::Sender<O>,
                             #timer
                         ) -> #service_name {

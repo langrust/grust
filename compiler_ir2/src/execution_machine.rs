@@ -258,25 +258,27 @@ impl ToTokens for ExecutionMachineTokens<'_> {
                 let new_runtime = {
                     // initialize services
                     let services_init = self.em.services_handlers.iter().map(
-                    |ServiceHandler {
-                         service_ident,
-                         service_struct_ident,
-                         service_mod_ident,
-                         ..
-                     }| {
-                        // parse the function that creates a new runtime
-                        let timer = if !timer_variants.is_empty() {
-                            quote! {timer.clone()}
-                        } else {
-                            quote! {}
-                        };
-                        quote! {
-                            let #service_ident = #service_mod_ident::#service_struct_ident::init(
-                                output.clone(), #timer
-                            );
-                        }
-                    },
-                );
+                        |ServiceHandler {
+                            service_ident,
+                            service_struct_ident,
+                            service_mod_ident,
+                            ..
+                        }| {
+                            // parse the function that creates a new runtime
+                            let init_instant = Ident::init_instant_var();
+                            let timer = if !timer_variants.is_empty() {
+                                quote! {timer.clone()}
+                            } else {
+                                quote! {}
+                            };
+                            quote! {
+                                let #service_ident = #service_mod_ident::#service_struct_ident::init(
+                                    #init_instant, output.clone(), #timer
+                                );
+                            }
+                        },
+                    );
+                    let init_instant = Ident::init_instant_var();
                     // parse the function that creates a new runtime
                     let timer = {
                         if !timer_variants.is_empty() {
@@ -286,7 +288,11 @@ impl ToTokens for ExecutionMachineTokens<'_> {
                         }
                     };
                     quote! {
-                        pub fn new(output: grust::futures::channel::mpsc::Sender<O>, #timer) -> Runtime {
+                        pub fn new(
+                                #init_instant: std::time::Instant,
+                                output: grust::futures::channel::mpsc::Sender<O>,
+                                #timer
+                            ) -> Runtime {
                             #(#services_init)*
                             Runtime {
                                 #(#field_values),*
@@ -345,6 +351,7 @@ impl ToTokens for ExecutionMachineTokens<'_> {
             let prio_stream_size = self.em.input_flows.len() + 1;
             let timer_stream_size = self.em.timing_events.len();
 
+            let init_instant = Ident::init_instant_var();
             // output, timer, and priority channels and streams + spawned service
             let (streams, new_service);
             if timer_channel_size > 0 {
@@ -396,8 +403,7 @@ impl ToTokens for ExecutionMachineTokens<'_> {
                         #prio_stream
                     }
                 };
-                new_service =
-                    quote! { let service = runtime::Runtime::new(output_sink, timers_sink); };
+                new_service = quote! { let service = runtime::Runtime::new(#init_instant, output_sink, timers_sink); };
             } else {
                 // no timers
                 streams = {
@@ -418,17 +424,18 @@ impl ToTokens for ExecutionMachineTokens<'_> {
                         #prio_stream
                     }
                 };
-                new_service = quote! { let service = runtime::Runtime::new(output_sink); };
+                new_service =
+                    quote! { let service = runtime::Runtime::new(#init_instant, output_sink); };
             }
 
             let spawn_service = if let Some(spawn_fn) = self.spawn_fn {
                 quote! { #spawn_fn(async move {
-                    let result = service.run_loop(INIT, prio_stream, init_signals).await;
+                    let result = service.run_loop(#init_instant, prio_stream, init_signals).await;
                     assert!(result.is_ok())
                 }) }
             } else {
                 quote! { grust::tokio::spawn(async move {
-                    let result = service.run_loop(INIT, prio_stream, init_signals).await;
+                    let result = service.run_loop(#init_instant, prio_stream, init_signals).await;
                     assert!(result.is_ok())
                 }) }
             };
@@ -447,7 +454,7 @@ impl ToTokens for ExecutionMachineTokens<'_> {
             quote! {
                 use grust::futures::{Stream, StreamExt};
                 pub fn run(
-                    INIT: std::time::Instant,
+                    #init_instant: std::time::Instant,
                     input_stream: impl Stream<Item = runtime::RuntimeInput> + Send + 'static,
                     init_signals: runtime::RuntimeInit,
                 ) -> #output_ty {
