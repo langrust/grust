@@ -131,10 +131,15 @@ pub mod runtime {
     }
     impl Runtime {
         pub fn new(
+            _grust_reserved_init_instant: std::time::Instant,
             output: grust::futures::channel::mpsc::Sender<O>,
             timer: grust::futures::channel::mpsc::Sender<(T, std::time::Instant)>,
         ) -> Runtime {
-            let aeb = aeb_service::AebService::init(output.clone(), timer.clone());
+            let aeb = aeb_service::AebService::init(
+                _grust_reserved_init_instant,
+                output.clone(),
+                timer.clone(),
+            );
             Runtime { aeb, output, timer }
         }
         #[inline]
@@ -287,6 +292,7 @@ pub mod runtime {
         }
         impl AebService {
             pub fn init(
+                _grust_reserved_init_instant: std::time::Instant,
                 output: grust::futures::channel::mpsc::Sender<O>,
                 timer: grust::futures::channel::mpsc::Sender<(T, std::time::Instant)>,
             ) -> AebService {
@@ -295,7 +301,7 @@ pub mod runtime {
                 let input_store = Default::default();
                 let braking_state = <BrakingStateState as grust::core::Component>::init();
                 AebService {
-                    begin: std::time::Instant::now(),
+                    begin: _grust_reserved_init_instant,
                     context,
                     delayed,
                     input_store,
@@ -654,7 +660,7 @@ pub mod runtime {
 }
 use grust::futures::{Stream, StreamExt};
 pub fn run(
-    INIT: std::time::Instant,
+    _grust_reserved_init_instant: std::time::Instant,
     input_stream: impl Stream<Item = runtime::RuntimeInput> + Send + 'static,
     init_signals: runtime::RuntimeInit,
 ) -> (
@@ -674,9 +680,11 @@ pub fn run(
         grust::futures::stream::select(input_stream, timers_stream),
         runtime::RuntimeInput::order,
     );
-    let service = runtime::Runtime::new(output_sink, timers_sink);
+    let service = runtime::Runtime::new(_grust_reserved_init_instant, output_sink, timers_sink);
     let handle = async_std::task::spawn(async move {
-        let result = service.run_loop(INIT, prio_stream, init_signals).await;
+        let result = service
+            .run_loop(_grust_reserved_init_instant, prio_stream, init_signals)
+            .await;
         assert!(result.is_ok())
     });
     (output_stream, handle)
