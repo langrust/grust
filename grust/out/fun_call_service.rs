@@ -41,6 +41,7 @@ pub mod runtime {
         pub float_signal: f64,
     }
     pub struct Runtime {
+        _grust_reserved_init_instant: std::time::Instant,
         test: test_service::TestService,
         output: grust::futures::channel::mpsc::Sender<O>,
     }
@@ -51,21 +52,21 @@ pub mod runtime {
         ) -> Runtime {
             let test =
                 test_service::TestService::init(_grust_reserved_init_instant, output.clone());
-            Runtime { test, output }
+            Runtime {
+                _grust_reserved_init_instant,
+                test,
+                output,
+            }
         }
         pub async fn run_loop(
             self,
-            _grust_reserved_init_instant: std::time::Instant,
             input: impl grust::futures::Stream<Item = I>,
             init_vals: RuntimeInit,
         ) -> Result<(), grust::futures::channel::mpsc::SendError> {
             grust::futures::pin_mut!(input);
             let mut runtime = self;
             let RuntimeInit { float_signal } = init_vals;
-            runtime
-                .test
-                .handle_init(_grust_reserved_init_instant, float_signal)
-                .await?;
+            runtime.test.handle_init(float_signal).await?;
             while let Some(input) = input.next().await {
                 match input {
                     I::FloatSignal(float_signal, _grust_reserved_instant) => {
@@ -148,7 +149,7 @@ pub mod runtime {
             }
         }
         pub struct TestService {
-            begin: std::time::Instant,
+            _grust_reserved_init_instant: std::time::Instant,
             context: Context,
             delayed: bool,
             input_store: TestServiceStore,
@@ -163,7 +164,7 @@ pub mod runtime {
                 let delayed = true;
                 let input_store = Default::default();
                 TestService {
-                    begin: _grust_reserved_init_instant,
+                    _grust_reserved_init_instant,
                     context,
                     delayed,
                     input_store,
@@ -172,9 +173,9 @@ pub mod runtime {
             }
             pub async fn handle_init(
                 &mut self,
-                _grust_reserved_instant: std::time::Instant,
                 float_signal: f64,
             ) -> Result<(), grust::futures::channel::mpsc::SendError> {
+                let _grust_reserved_instant = self._grust_reserved_init_instant;
                 self.context.float_signal.set(float_signal);
                 let int_signal = utils::floor(float_signal);
                 self.context.int_signal.set(int_signal);
@@ -250,9 +251,7 @@ pub fn run(
     );
     let service = runtime::Runtime::new(_grust_reserved_init_instant, output_sink);
     grust::tokio::spawn(async move {
-        let result = service
-            .run_loop(_grust_reserved_init_instant, prio_stream, init_signals)
-            .await;
+        let result = service.run_loop(prio_stream, init_signals).await;
         assert!(result.is_ok())
     });
     output_stream

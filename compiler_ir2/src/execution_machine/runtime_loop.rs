@@ -21,8 +21,6 @@ impl RuntimeLoop {
 
 impl ToTokens for RuntimeLoopTokens<'_> {
     fn to_tokens(&self, tokens: &mut TokenStream2) {
-        let init_instant = Ident::init_instant_var();
-
         // initial signals' values
         let init_args = self
             .in_flows
@@ -39,7 +37,7 @@ impl ToTokens for RuntimeLoopTokens<'_> {
                  input_flows,
              }| {
                 let args = input_flows.iter().map(|InterfaceFlow { ident, .. }| ident);
-                quote! { runtime.#service.handle_init(#init_instant, #(#args),*).await?; }
+                quote! { runtime.#service.handle_init(#(#args),*).await?; }
             },
         );
 
@@ -96,7 +94,6 @@ impl ToTokens for RuntimeLoopTokens<'_> {
         quote! {
             pub async fn run_loop(
                 self,
-                #init_instant: std::time::Instant,
                 input: impl grust::futures::Stream<Item = I>,
                 init_vals: RuntimeInit,
             ) -> Result<(), grust::futures::channel::mpsc::SendError> {
@@ -149,7 +146,7 @@ mod old {
                     | ArrivingFlow::ServiceTimeout(time_flow_name) => {
                         let enum_ident = time_flow_name.to_camel();
                         let init_instant = Ident::init_instant_var();
-                        Some(parse_quote! { runtime.send_timer(T::#enum_ident, #init_instant).await?; })
+                        Some(parse_quote! { runtime.send_timer(T::#enum_ident, runtime.#init_instant).await?; })
                     }
                 }
             });
@@ -161,7 +158,7 @@ mod old {
                         None
                     } else {
                         let init_instant = Ident::init_instant_var();
-                        Some(parse_quote! { runtime.send_output(O::#enum_ident(Default::default(), #init_instant)).await?; })
+                        Some(parse_quote! { runtime.send_output(O::#enum_ident(Default::default(), runtime.#init_instant)).await?; })
                     }
                 }
             );
@@ -221,12 +218,11 @@ mod old {
                     }
                 }
             };
-            let init_instant = Ident::init_instant_var();
 
             // `run_loop` function
             syn::ImplItem::Fn(parse_quote! {
                 pub async fn run_loop(
-                    self, #init_instant: std::time::Instant, input: impl grust::futures::Stream<Item = I>
+                    self, input: impl grust::futures::Stream<Item = I>
                 ) -> Result<(), grust::futures::channel::mpsc::SendError> {
                     grust::futures::pin_mut!(input);
                     let mut runtime = self;

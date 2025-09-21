@@ -129,6 +129,7 @@ pub mod runtime {
         }
     }
     pub struct Runtime {
+        _grust_reserved_init_instant: std::time::Instant,
         aeb: aeb_service::AebService,
         output: grust::futures::channel::mpsc::Sender<O>,
         timer: grust::futures::channel::mpsc::Sender<(T, std::time::Instant)>,
@@ -144,7 +145,12 @@ pub mod runtime {
                 output.clone(),
                 timer.clone(),
             );
-            Runtime { aeb, output, timer }
+            Runtime {
+                _grust_reserved_init_instant,
+                aeb,
+                output,
+                timer,
+            }
         }
         #[inline]
         pub async fn send_timer(
@@ -157,17 +163,13 @@ pub mod runtime {
         }
         pub async fn run_loop(
             self,
-            _grust_reserved_init_instant: std::time::Instant,
             input: impl grust::futures::Stream<Item = I>,
             init_vals: RuntimeInit,
         ) -> Result<(), grust::futures::channel::mpsc::SendError> {
             grust::futures::pin_mut!(input);
             let mut runtime = self;
             let RuntimeInit { speed_km_h } = init_vals;
-            runtime
-                .aeb
-                .handle_init(_grust_reserved_init_instant, speed_km_h)
-                .await?;
+            runtime.aeb.handle_init(speed_km_h).await?;
             while let Some(input) = input.next().await {
                 match input {
                     I::PedestrianL(pedestrian_l, _grust_reserved_instant) => {
@@ -286,7 +288,7 @@ pub mod runtime {
             }
         }
         pub struct AebService {
-            begin: std::time::Instant,
+            _grust_reserved_init_instant: std::time::Instant,
             context: Context,
             delayed: bool,
             input_store: AebServiceStore,
@@ -305,7 +307,7 @@ pub mod runtime {
                 let input_store = Default::default();
                 let braking_state = <BrakingStateState as grust::core::Component>::init();
                 AebService {
-                    begin: _grust_reserved_init_instant,
+                    _grust_reserved_init_instant,
                     context,
                     delayed,
                     input_store,
@@ -316,9 +318,9 @@ pub mod runtime {
             }
             pub async fn handle_init(
                 &mut self,
-                _grust_reserved_instant: std::time::Instant,
                 speed_km_h: f64,
             ) -> Result<(), grust::futures::channel::mpsc::SendError> {
+                let _grust_reserved_instant = self._grust_reserved_init_instant;
                 self.reset_service_timeout(_grust_reserved_instant).await?;
                 self.send_timer(T::TimeoutTimeoutPedestrian, _grust_reserved_instant)
                     .await?;
@@ -683,9 +685,7 @@ pub fn run(
     );
     let service = runtime::Runtime::new(_grust_reserved_init_instant, output_sink, timers_sink);
     grust::tokio::spawn(async move {
-        let result = service
-            .run_loop(_grust_reserved_init_instant, prio_stream, init_signals)
-            .await;
+        let result = service.run_loop(prio_stream, init_signals).await;
         assert!(result.is_ok())
     });
     output_stream

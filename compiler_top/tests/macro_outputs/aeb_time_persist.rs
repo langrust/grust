@@ -173,17 +173,28 @@ pub mod runtime {
         }
     }
     pub struct Runtime {
+        _grust_reserved_init_instant: std::time::Instant,
         aeb: aeb_service::AebService,
         output: grust::futures::channel::mpsc::Sender<O>,
         timer: grust::futures::channel::mpsc::Sender<(T, std::time::Instant)>,
     }
     impl Runtime {
         pub fn new(
+            _grust_reserved_init_instant: std::time::Instant,
             output: grust::futures::channel::mpsc::Sender<O>,
             timer: grust::futures::channel::mpsc::Sender<(T, std::time::Instant)>,
         ) -> Runtime {
-            let aeb = aeb_service::AebService::init(output.clone(), timer.clone());
-            Runtime { aeb, output, timer }
+            let aeb = aeb_service::AebService::init(
+                _grust_reserved_init_instant,
+                output.clone(),
+                timer.clone(),
+            );
+            Runtime {
+                _grust_reserved_init_instant,
+                aeb,
+                output,
+                timer,
+            }
         }
         #[inline]
         pub async fn send_timer(
@@ -196,17 +207,13 @@ pub mod runtime {
         }
         pub async fn run_loop(
             self,
-            _grust_reserved_init_instant: std::time::Instant,
             input: impl grust::futures::Stream<Item = I>,
             init_vals: RuntimeInit,
         ) -> Result<(), grust::futures::channel::mpsc::SendError> {
             grust::futures::pin_mut!(input);
             let mut runtime = self;
             let RuntimeInit {} = init_vals;
-            runtime
-                .aeb
-                .handle_init(_grust_reserved_init_instant)
-                .await?;
+            runtime.aeb.handle_init().await?;
             while let Some(input) = input.next().await {
                 match input {
                     I::PedestrianL(pedestrian_l, _grust_reserved_instant) => {
@@ -369,7 +376,7 @@ pub mod runtime {
             }
         }
         pub struct AebService {
-            begin: std::time::Instant,
+            _grust_reserved_init_instant: std::time::Instant,
             context: Context,
             delayed: bool,
             input_store: AebServiceStore,
@@ -380,6 +387,7 @@ pub mod runtime {
         }
         impl AebService {
             pub fn init(
+                _grust_reserved_init_instant: std::time::Instant,
                 output: grust::futures::channel::mpsc::Sender<O>,
                 timer: grust::futures::channel::mpsc::Sender<(T, std::time::Instant)>,
             ) -> AebService {
@@ -389,7 +397,7 @@ pub mod runtime {
                 let braking_state = <BrakingStateState as grust::core::Component>::init();
                 let derive = <DeriveState as grust::core::Component>::init();
                 AebService {
-                    begin: std::time::Instant::now(),
+                    _grust_reserved_init_instant,
                     context,
                     delayed,
                     input_store,
@@ -401,13 +409,13 @@ pub mod runtime {
             }
             pub async fn handle_init(
                 &mut self,
-                _grust_reserved_instant: std::time::Instant,
             ) -> Result<(), grust::futures::channel::mpsc::SendError> {
+                let _grust_reserved_instant = self._grust_reserved_init_instant;
                 self.reset_service_timeout(_grust_reserved_instant).await?;
                 self.send_timer(T::TimeoutTimeoutPedest, _grust_reserved_instant)
                     .await?;
                 let x = (_grust_reserved_instant
-                    .duration_since(self.begin)
+                    .duration_since(self._grust_reserved_init_instant)
                     .as_millis()) as f64;
                 self.context.x.set(x);
                 let DeriveOutput { a_km_h: acc_km_h } =
@@ -450,7 +458,9 @@ pub mod runtime {
                     if self.context.speed_km_h_bis.get() != *speed_km_h_ref {
                         self.context.speed_km_h_bis.set(*speed_km_h_ref);
                     }
-                    let x = (_speed_km_h_instant.duration_since(self.begin).as_millis()) as f64;
+                    let x = (_speed_km_h_instant
+                        .duration_since(self._grust_reserved_init_instant)
+                        .as_millis()) as f64;
                     self.context.x.set(x);
                     if self.context.speed_km_h_bis.is_new() || self.context.x.is_new() {
                         let DeriveOutput { a_km_h: acc_km_h } =
@@ -498,7 +508,9 @@ pub mod runtime {
             ) -> Result<(), grust::futures::channel::mpsc::SendError> {
                 self.reset_time_constraints(_timeout_aeb_instant).await?;
                 self.context.reset();
-                let x = (_timeout_aeb_instant.duration_since(self.begin).as_millis()) as f64;
+                let x = (_timeout_aeb_instant
+                    .duration_since(self._grust_reserved_init_instant)
+                    .as_millis()) as f64;
                 self.context.x.set(x);
                 if self.context.speed_km_h_bis.is_new() || self.context.x.is_new() {
                     let DeriveOutput { a_km_h: acc_km_h } =
@@ -559,7 +571,9 @@ pub mod runtime {
                         self.send_timer(T::TimeoutTimeoutPedest, _pedestrian_l_instant)
                             .await?;
                     }
-                    let x = (_pedestrian_l_instant.duration_since(self.begin).as_millis()) as f64;
+                    let x = (_pedestrian_l_instant
+                        .duration_since(self._grust_reserved_init_instant)
+                        .as_millis()) as f64;
                     self.context.x.set(x);
                     if self.context.speed_km_h_bis.is_new() || self.context.x.is_new() {
                         let DeriveOutput { a_km_h: acc_km_h } =
@@ -622,7 +636,9 @@ pub mod runtime {
                         self.send_timer(T::TimeoutTimeoutPedest, _pedestrian_r_instant)
                             .await?;
                     }
-                    let x = (_pedestrian_r_instant.duration_since(self.begin).as_millis()) as f64;
+                    let x = (_pedestrian_r_instant
+                        .duration_since(self._grust_reserved_init_instant)
+                        .as_millis()) as f64;
                     self.context.x.set(x);
                     if self.context.speed_km_h_bis.is_new() || self.context.x.is_new() {
                         let DeriveOutput { a_km_h: acc_km_h } =
@@ -680,7 +696,7 @@ pub mod runtime {
                     self.send_timer(T::TimeoutTimeoutPedest, _timeout_timeout_pedest_instant)
                         .await?;
                     let x = (_timeout_timeout_pedest_instant
-                        .duration_since(self.begin)
+                        .duration_since(self._grust_reserved_init_instant)
                         .as_millis()) as f64;
                     self.context.x.set(x);
                     if self.context.speed_km_h_bis.is_new() || self.context.x.is_new() {
@@ -777,7 +793,7 @@ pub mod runtime {
                         self.context.speed_km_h_bis.set(*speed_km_h_ref);
                     }
                     let x = (_grust_reserved_instant
-                        .duration_since(self.begin)
+                        .duration_since(self._grust_reserved_init_instant)
                         .as_millis()) as f64;
                     self.context.x.set(x);
                     if self.context.speed_km_h_bis.is_new() || self.context.x.is_new() {
@@ -863,7 +879,7 @@ pub mod runtime {
 }
 use grust::futures::{Stream, StreamExt};
 pub fn run(
-    INIT: std::time::Instant,
+    _grust_reserved_init_instant: std::time::Instant,
     input_stream: impl Stream<Item = runtime::RuntimeInput> + Send + 'static,
     init_signals: runtime::RuntimeInit,
 ) -> grust::futures::channel::mpsc::Receiver<runtime::RuntimeOutput> {
@@ -880,9 +896,9 @@ pub fn run(
         grust::futures::stream::select(input_stream, timers_stream),
         runtime::RuntimeInput::order,
     );
-    let service = runtime::Runtime::new(output_sink, timers_sink);
+    let service = runtime::Runtime::new(_grust_reserved_init_instant, output_sink, timers_sink);
     grust::tokio::spawn(async move {
-        let result = service.run_loop(INIT, prio_stream, init_signals).await;
+        let result = service.run_loop(prio_stream, init_signals).await;
         assert!(result.is_ok())
     });
     output_stream

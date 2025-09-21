@@ -136,15 +136,15 @@ impl ToTokens for ServiceHandlerTokens<'_> {
 
         // create service structure
         {
+            let init_instant = Ident::init_instant_var();
             let mut service_fields = vec![
-                quote! { begin: std::time::Instant },
+                quote! { #init_instant: std::time::Instant },
                 quote! { context: Context },
                 quote! { delayed: bool },
                 quote! { input_store: #service_store_ident },
             ];
-            let init_instant = Ident::init_instant_var();
             let mut field_values = vec![
-                quote! { begin: #init_instant },
+                quote! { #init_instant },
                 quote! { context },
                 quote! { delayed },
                 quote! { input_store },
@@ -455,6 +455,7 @@ impl ToTokens for InitHandler {
             });
         let instrs = &self.instruction;
         let instant = Ident::instant_var();
+        let init_instant = Ident::init_instant_var();
 
         // init service timeout
         let service_timeout = if self.has_time_range {
@@ -467,9 +468,9 @@ impl ToTokens for InitHandler {
         quote! {
             pub async fn handle_init(
                 &mut self,
-                #instant: std::time::Instant,
                 #(#init_args),*
             ) -> Result<(), grust::futures::channel::mpsc::SendError> {
+                let #instant = self.#init_instant;
                 #service_timeout
                 #instrs
                 Ok(())
@@ -969,12 +970,14 @@ impl ToTokens for Expression {
                 } else {
                     Ident::instant_var()
                 };
-                quote! { (#instant.duration_since(self.begin).as_millis()) as f64 }
+                let init_instant = Ident::init_instant_var();
+                quote! { (#instant.duration_since(self.#init_instant).as_millis()) as f64 }
                     .to_tokens(tokens)
             }
             Expression::InstantFromInputStore { flow } => {
                 let input_store_var = flow.to_input_store_var();
-                quote! { #input_store_var.map(|(_, y)| (y.duration_since(self.begin).as_millis()) as f64) }.to_tokens(tokens)
+                let init_instant = Ident::init_instant_var();
+                quote! { #input_store_var.map(|(_, y)| (y.duration_since(self.#init_instant).as_millis()) as f64) }.to_tokens(tokens)
             }
         }
     }

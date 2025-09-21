@@ -163,6 +163,7 @@ pub mod runtime {
         }
     }
     pub struct Runtime {
+        _grust_reserved_init_instant: std::time::Instant,
         adaptive_cruise_control: adaptive_cruise_control_service::AdaptiveCruiseControlService,
         output: grust::futures::channel::mpsc::Sender<O>,
         timer: grust::futures::channel::mpsc::Sender<(T, std::time::Instant)>,
@@ -180,6 +181,7 @@ pub mod runtime {
                     timer.clone(),
                 );
             Runtime {
+                _grust_reserved_init_instant,
                 adaptive_cruise_control,
                 output,
                 timer,
@@ -196,7 +198,6 @@ pub mod runtime {
         }
         pub async fn run_loop(
             self,
-            _grust_reserved_init_instant: std::time::Instant,
             input: impl grust::futures::Stream<Item = I>,
             init_vals: RuntimeInit,
         ) -> Result<(), grust::futures::channel::mpsc::SendError> {
@@ -208,7 +209,7 @@ pub mod runtime {
             } = init_vals;
             runtime
                 .adaptive_cruise_control
-                .handle_init(_grust_reserved_init_instant, radar_m, speed_km_h)
+                .handle_init(radar_m, speed_km_h)
                 .await?;
             while let Some(input) = input.next().await {
                 match input {
@@ -450,7 +451,7 @@ pub mod runtime {
             }
         }
         pub struct AdaptiveCruiseControlService {
-            begin: std::time::Instant,
+            _grust_reserved_init_instant: std::time::Instant,
             context: Context,
             delayed: bool,
             input_store: AdaptiveCruiseControlServiceStore,
@@ -474,7 +475,7 @@ pub mod runtime {
                     <grust::std::time::derivation::DeriveState as grust::core::Component>::init();
                 let activate = <ActivateState as grust::core::Component>::init();
                 AdaptiveCruiseControlService {
-                    begin: _grust_reserved_init_instant,
+                    _grust_reserved_init_instant,
                     context,
                     delayed,
                     input_store,
@@ -487,10 +488,10 @@ pub mod runtime {
             }
             pub async fn handle_init(
                 &mut self,
-                _grust_reserved_instant: std::time::Instant,
                 radar_m: f64,
                 speed_km_h: f64,
             ) -> Result<(), grust::futures::channel::mpsc::SendError> {
+                let _grust_reserved_instant = self._grust_reserved_init_instant;
                 self.reset_service_timeout(_grust_reserved_instant).await?;
                 self.context.speed_km_h.set(speed_km_h);
                 let speed_m_s = utils::convert(speed_km_h);
@@ -503,7 +504,7 @@ pub mod runtime {
                 );
                 self.context.cond.set(cond);
                 let x = (_grust_reserved_instant
-                    .duration_since(self.begin)
+                    .duration_since(self._grust_reserved_init_instant)
                     .as_millis()) as f64;
                 self.context.x.set(x);
                 let grust::std::time::derivation::DeriveOutput { d: vel_delta } =
@@ -554,7 +555,9 @@ pub mod runtime {
                             );
                         self.context.cond.set(cond);
                     }
-                    let x = (_radar_m_instant.duration_since(self.begin).as_millis()) as f64;
+                    let x = (_radar_m_instant
+                        .duration_since(self._grust_reserved_init_instant)
+                        .as_millis()) as f64;
                     self.context.x.set(x);
                     if self.context.radar_m.is_new() || self.context.x.is_new() {
                         let grust :: std :: time :: derivation :: DeriveOutput
@@ -638,7 +641,7 @@ pub mod runtime {
                         self.context.cond.set(cond);
                     }
                     let x = (_grust_reserved_instant
-                        .duration_since(self.begin)
+                        .duration_since(self._grust_reserved_init_instant)
                         .as_millis()) as f64;
                     self.context.x.set(x);
                     if self.context.radar_m.is_new() || self.context.x.is_new() {
@@ -710,7 +713,9 @@ pub mod runtime {
                             );
                         self.context.cond.set(cond);
                     }
-                    let x = (_acc_active_instant.duration_since(self.begin).as_millis()) as f64;
+                    let x = (_acc_active_instant
+                        .duration_since(self._grust_reserved_init_instant)
+                        .as_millis()) as f64;
                     self.context.x.set(x);
                     if self.context.radar_m.is_new() || self.context.x.is_new() {
                         let grust :: std :: time :: derivation :: DeriveOutput
@@ -763,7 +768,7 @@ pub mod runtime {
                     .await?;
                 self.context.reset();
                 let x = (_timeout_adaptive_cruise_control_instant
-                    .duration_since(self.begin)
+                    .duration_since(self._grust_reserved_init_instant)
                     .as_millis()) as f64;
                 self.context.x.set(x);
                 if self.context.radar_m.is_new() || self.context.x.is_new() {
@@ -829,7 +834,9 @@ pub mod runtime {
                         let speed_m_s = utils::convert(speed_km_h);
                         self.context.speed_m_s.set(speed_m_s);
                     }
-                    let x = (_speed_km_h_instant.duration_since(self.begin).as_millis()) as f64;
+                    let x = (_speed_km_h_instant
+                        .duration_since(self._grust_reserved_init_instant)
+                        .as_millis()) as f64;
                     self.context.x.set(x);
                     if self.context.radar_m.is_new() || self.context.x.is_new() {
                         let grust :: std :: time :: derivation :: DeriveOutput
@@ -925,9 +932,7 @@ pub fn run(
     );
     let service = runtime::Runtime::new(_grust_reserved_init_instant, output_sink, timers_sink);
     grust::tokio::spawn(async move {
-        let result = service
-            .run_loop(_grust_reserved_init_instant, prio_stream, init_signals)
-            .await;
+        let result = service.run_loop(prio_stream, init_signals).await;
         assert!(result.is_ok())
     });
     output_stream
