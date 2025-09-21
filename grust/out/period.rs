@@ -72,6 +72,7 @@ pub mod runtime {
         }
     }
     pub struct Runtime {
+        _grust_reserved_init_instant: std::time::Instant,
         test: test_service::TestService,
         output: grust::futures::channel::mpsc::Sender<O>,
         timer: grust::futures::channel::mpsc::Sender<(T, std::time::Instant)>,
@@ -88,6 +89,7 @@ pub mod runtime {
                 timer.clone(),
             );
             Runtime {
+                _grust_reserved_init_instant,
                 test,
                 output,
                 timer,
@@ -104,17 +106,13 @@ pub mod runtime {
         }
         pub async fn run_loop(
             self,
-            _grust_reserved_init_instant: std::time::Instant,
             input: impl grust::futures::Stream<Item = I>,
             init_vals: RuntimeInit,
         ) -> Result<(), grust::futures::channel::mpsc::SendError> {
             grust::futures::pin_mut!(input);
             let mut runtime = self;
             let RuntimeInit { input_s } = init_vals;
-            runtime
-                .test
-                .handle_init(_grust_reserved_init_instant, input_s)
-                .await?;
+            runtime.test.handle_init(input_s).await?;
             while let Some(input) = input.next().await {
                 match input {
                     I::InputE(input_e, _grust_reserved_instant) => {
@@ -267,7 +265,7 @@ pub mod runtime {
             }
         }
         pub struct TestService {
-            begin: std::time::Instant,
+            _grust_reserved_init_instant: std::time::Instant,
             context: Context,
             delayed: bool,
             input_store: TestServiceStore,
@@ -284,7 +282,7 @@ pub mod runtime {
                 let delayed = true;
                 let input_store = Default::default();
                 TestService {
-                    begin: _grust_reserved_init_instant,
+                    _grust_reserved_init_instant,
                     context,
                     delayed,
                     input_store,
@@ -294,9 +292,9 @@ pub mod runtime {
             }
             pub async fn handle_init(
                 &mut self,
-                _grust_reserved_instant: std::time::Instant,
                 input_s: i64,
             ) -> Result<(), grust::futures::channel::mpsc::SendError> {
+                let _grust_reserved_instant = self._grust_reserved_init_instant;
                 self.reset_service_timeout(_grust_reserved_instant).await?;
                 let clock_ref = &mut None;
                 let sampled_ref = &mut None;
@@ -305,7 +303,7 @@ pub mod runtime {
                     .await?;
                 *clock_ref = Some(
                     (_grust_reserved_instant
-                        .duration_since(self.begin)
+                        .duration_since(self._grust_reserved_init_instant)
                         .as_millis()) as f64,
                 );
                 if clock_ref.is_some() {
@@ -339,8 +337,11 @@ pub mod runtime {
                     let sampled_ref = &mut None;
                     self.send_timer(T::PeriodClock, _period_clock_instant)
                         .await?;
-                    *clock_ref =
-                        Some((_period_clock_instant.duration_since(self.begin).as_millis()) as f64);
+                    *clock_ref = Some(
+                        (_period_clock_instant
+                            .duration_since(self._grust_reserved_init_instant)
+                            .as_millis()) as f64,
+                    );
                     if clock_ref.is_some() {
                         *sampled_ref = self.context.input_e.take();
                     }
@@ -395,8 +396,10 @@ pub mod runtime {
                             .await?;
                     }
                     *period_clock_ref = _period_clock_input_store.map(|(x, _)| x);
-                    *clock_ref = _period_clock_input_store
-                        .map(|(_, y)| (y.duration_since(self.begin).as_millis()) as f64);
+                    *clock_ref = _period_clock_input_store.map(|(_, y)| {
+                        (y.duration_since(self._grust_reserved_init_instant)
+                            .as_millis()) as f64
+                    });
                     if input_e_ref.is_some() {
                         self.context.input_e.set(*input_e_ref);
                     }
@@ -561,9 +564,7 @@ pub fn run(
     );
     let service = runtime::Runtime::new(_grust_reserved_init_instant, output_sink, timers_sink);
     grust::tokio::spawn(async move {
-        let result = service
-            .run_loop(_grust_reserved_init_instant, prio_stream, init_signals)
-            .await;
+        let result = service.run_loop(prio_stream, init_signals).await;
         assert!(result.is_ok())
     });
     output_stream

@@ -229,6 +229,7 @@ pub mod runtime {
         }
     }
     pub struct Runtime {
+        _grust_reserved_init_instant: std::time::Instant,
         para_mess: para_mess_service::ParaMessService,
         output: grust::futures::channel::mpsc::Sender<O>,
         timer: grust::futures::channel::mpsc::Sender<(T, std::time::Instant)>,
@@ -245,6 +246,7 @@ pub mod runtime {
                 timer.clone(),
             );
             Runtime {
+                _grust_reserved_init_instant,
                 para_mess,
                 output,
                 timer,
@@ -261,17 +263,13 @@ pub mod runtime {
         }
         pub async fn run_loop(
             self,
-            _grust_reserved_init_instant: std::time::Instant,
             input: impl grust::futures::Stream<Item = I>,
             init_vals: RuntimeInit,
         ) -> Result<(), grust::futures::channel::mpsc::SendError> {
             grust::futures::pin_mut!(input);
             let mut runtime = self;
             let RuntimeInit {} = init_vals;
-            runtime
-                .para_mess
-                .handle_init(_grust_reserved_init_instant)
-                .await?;
+            runtime.para_mess.handle_init().await?;
             while let Some(input) = input.next().await {
                 match input {
                     I::Timer(T::DelayParaMess, _grust_reserved_instant) => {
@@ -476,7 +474,7 @@ pub mod runtime {
             }
         }
         pub struct ParaMessService {
-            begin: std::time::Instant,
+            _grust_reserved_init_instant: std::time::Instant,
             context: Context,
             delayed: bool,
             input_store: ParaMessServiceStore,
@@ -503,7 +501,7 @@ pub mod runtime {
                 let c_5 = <C5State as grust::core::Component>::init();
                 let c_2 = <C2State as grust::core::Component>::init();
                 ParaMessService {
-                    begin: _grust_reserved_init_instant,
+                    _grust_reserved_init_instant,
                     context,
                     delayed,
                     input_store,
@@ -518,8 +516,8 @@ pub mod runtime {
             }
             pub async fn handle_init(
                 &mut self,
-                _grust_reserved_instant: std::time::Instant,
             ) -> Result<(), grust::futures::channel::mpsc::SendError> {
+                let _grust_reserved_instant = self._grust_reserved_init_instant;
                 self.reset_service_timeout(_grust_reserved_instant).await?;
                 grust::tokio::join!(async {}, async {});
                 self.send_output(
@@ -767,9 +765,7 @@ pub fn run(
     );
     let service = runtime::Runtime::new(_grust_reserved_init_instant, output_sink, timers_sink);
     grust::tokio::spawn(async move {
-        let result = service
-            .run_loop(_grust_reserved_init_instant, prio_stream, init_signals)
-            .await;
+        let result = service.run_loop(prio_stream, init_signals).await;
         assert!(result.is_ok())
     });
     output_stream

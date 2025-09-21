@@ -353,20 +353,27 @@ pub mod runtime {
         pub set_speed: f64,
     }
     pub struct Runtime {
+        _grust_reserved_init_instant: std::time::Instant,
         speed_limiter: speed_limiter_service::SpeedLimiterService,
         output: grust::futures::channel::mpsc::Sender<O>,
     }
     impl Runtime {
-        pub fn new(output: grust::futures::channel::mpsc::Sender<O>) -> Runtime {
-            let speed_limiter = speed_limiter_service::SpeedLimiterService::init(output.clone());
+        pub fn new(
+            _grust_reserved_init_instant: std::time::Instant,
+            output: grust::futures::channel::mpsc::Sender<O>,
+        ) -> Runtime {
+            let speed_limiter = speed_limiter_service::SpeedLimiterService::init(
+                _grust_reserved_init_instant,
+                output.clone(),
+            );
             Runtime {
+                _grust_reserved_init_instant,
                 speed_limiter,
                 output,
             }
         }
         pub async fn run_loop(
             self,
-            _grust_reserved_init_instant: std::time::Instant,
             input: impl grust::futures::Stream<Item = I>,
             init_vals: RuntimeInit,
         ) -> Result<(), grust::futures::channel::mpsc::SendError> {
@@ -379,7 +386,7 @@ pub mod runtime {
             } = init_vals;
             runtime
                 .speed_limiter
-                .handle_init(_grust_reserved_init_instant, speed, vacuum_brake, set_speed)
+                .handle_init(speed, vacuum_brake, set_speed)
                 .await?;
             while let Some(input) = input.next().await {
                 match input {
@@ -745,7 +752,7 @@ pub mod runtime {
             }
         }
         pub struct SpeedLimiterService {
-            begin: std::time::Instant,
+            _grust_reserved_init_instant: std::time::Instant,
             context: Context,
             delayed: bool,
             input_store: SpeedLimiterServiceStore,
@@ -754,14 +761,17 @@ pub mod runtime {
             output: grust::futures::channel::mpsc::Sender<O>,
         }
         impl SpeedLimiterService {
-            pub fn init(output: grust::futures::channel::mpsc::Sender<O>) -> SpeedLimiterService {
+            pub fn init(
+                _grust_reserved_init_instant: std::time::Instant,
+                output: grust::futures::channel::mpsc::Sender<O>,
+            ) -> SpeedLimiterService {
                 let context = Context::init();
                 let delayed = true;
                 let input_store = Default::default();
                 let process_set_speed = <ProcessSetSpeedState as grust::core::Component>::init();
                 let speed_limiter = <SpeedLimiterState as grust::core::Component>::init();
                 SpeedLimiterService {
-                    begin: std::time::Instant::now(),
+                    _grust_reserved_init_instant,
                     context,
                     delayed,
                     input_store,
@@ -772,11 +782,11 @@ pub mod runtime {
             }
             pub async fn handle_init(
                 &mut self,
-                _grust_reserved_instant: std::time::Instant,
                 speed: f64,
                 vacuum_brake: VacuumBrakeState,
                 set_speed: f64,
             ) -> Result<(), grust::futures::channel::mpsc::SendError> {
+                let _grust_reserved_instant = self._grust_reserved_init_instant;
                 self.context.set_speed.set(set_speed);
                 self.context.x.set(set_speed);
                 self.context.changed_set_speed_old.set(self.context.x.get());
@@ -1222,7 +1232,7 @@ pub mod runtime {
 }
 use grust::futures::{Stream, StreamExt};
 pub fn run(
-    INIT: std::time::Instant,
+    _grust_reserved_init_instant: std::time::Instant,
     input_stream: impl Stream<Item = runtime::RuntimeInput> + Send + 'static,
     init_signals: runtime::RuntimeInit,
 ) -> grust::futures::channel::mpsc::Receiver<runtime::RuntimeOutput> {
@@ -1233,9 +1243,9 @@ pub fn run(
         input_stream,
         runtime::RuntimeInput::order,
     );
-    let service = runtime::Runtime::new(output_sink);
+    let service = runtime::Runtime::new(_grust_reserved_init_instant, output_sink);
     grust::tokio::spawn(async move {
-        let result = service.run_loop(INIT, prio_stream, init_signals).await;
+        let result = service.run_loop(prio_stream, init_signals).await;
         assert!(result.is_ok())
     });
     output_stream

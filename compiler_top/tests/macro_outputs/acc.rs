@@ -341,21 +341,25 @@ pub mod runtime {
         }
     }
     pub struct Runtime {
+        _grust_reserved_init_instant: std::time::Instant,
         adaptive_cruise_control: adaptive_cruise_control_service::AdaptiveCruiseControlService,
         output: grust::futures::channel::mpsc::Sender<O>,
         timer: grust::futures::channel::mpsc::Sender<(T, std::time::Instant)>,
     }
     impl Runtime {
         pub fn new(
+            _grust_reserved_init_instant: std::time::Instant,
             output: grust::futures::channel::mpsc::Sender<O>,
             timer: grust::futures::channel::mpsc::Sender<(T, std::time::Instant)>,
         ) -> Runtime {
             let adaptive_cruise_control =
                 adaptive_cruise_control_service::AdaptiveCruiseControlService::init(
+                    _grust_reserved_init_instant,
                     output.clone(),
                     timer.clone(),
                 );
             Runtime {
+                _grust_reserved_init_instant,
                 adaptive_cruise_control,
                 output,
                 timer,
@@ -372,7 +376,6 @@ pub mod runtime {
         }
         pub async fn run_loop(
             self,
-            _grust_reserved_init_instant: std::time::Instant,
             input: impl grust::futures::Stream<Item = I>,
             init_vals: RuntimeInit,
         ) -> Result<(), grust::futures::channel::mpsc::SendError> {
@@ -384,7 +387,7 @@ pub mod runtime {
             } = init_vals;
             runtime
                 .adaptive_cruise_control
-                .handle_init(_grust_reserved_init_instant, distance_m, speed_km_h)
+                .handle_init(distance_m, speed_km_h)
                 .await?;
             while let Some(input) = input.next().await {
                 match input {
@@ -560,7 +563,7 @@ pub mod runtime {
             }
         }
         pub struct AdaptiveCruiseControlService {
-            begin: std::time::Instant,
+            _grust_reserved_init_instant: std::time::Instant,
             context: Context,
             delayed: bool,
             input_store: AdaptiveCruiseControlServiceStore,
@@ -571,6 +574,7 @@ pub mod runtime {
         }
         impl AdaptiveCruiseControlService {
             pub fn init(
+                _grust_reserved_init_instant: std::time::Instant,
                 output: grust::futures::channel::mpsc::Sender<O>,
                 timer: grust::futures::channel::mpsc::Sender<(T, std::time::Instant)>,
             ) -> AdaptiveCruiseControlService {
@@ -580,7 +584,7 @@ pub mod runtime {
                 let activate = <ActivateState as grust::core::Component>::init();
                 let filtered_acc = <FilteredAccState as grust::core::Component>::init();
                 AdaptiveCruiseControlService {
-                    begin: std::time::Instant::now(),
+                    _grust_reserved_init_instant,
                     context,
                     delayed,
                     input_store,
@@ -592,10 +596,10 @@ pub mod runtime {
             }
             pub async fn handle_init(
                 &mut self,
-                _grust_reserved_instant: std::time::Instant,
                 distance_m: f64,
                 speed_km_h: f64,
             ) -> Result<(), grust::futures::channel::mpsc::SendError> {
+                let _grust_reserved_instant = self._grust_reserved_init_instant;
                 self.reset_service_timeout(_grust_reserved_instant).await?;
                 self.context.speed_km_h.set(speed_km_h);
                 self.context.distance_m.set(distance_m);
@@ -610,7 +614,7 @@ pub mod runtime {
                 );
                 self.context.condition.set(condition);
                 let t = (_grust_reserved_instant
-                    .duration_since(self.begin)
+                    .duration_since(self._grust_reserved_init_instant)
                     .as_millis()) as f64;
                 self.context.t.set(t);
                 let FilteredAccOutput {
@@ -653,7 +657,9 @@ pub mod runtime {
                         );
                         self.context.condition.set(condition);
                     }
-                    let t = (_distance_m_instant.duration_since(self.begin).as_millis()) as f64;
+                    let t = (_distance_m_instant
+                        .duration_since(self._grust_reserved_init_instant)
+                        .as_millis()) as f64;
                     self.context.t.set(t);
                     if self.context.condition.is_new()
                         || self.context.distance_m.is_new()
@@ -697,7 +703,7 @@ pub mod runtime {
                     .await?;
                 self.context.reset();
                 let t = (_timeout_adaptive_cruise_control_instant
-                    .duration_since(self.begin)
+                    .duration_since(self._grust_reserved_init_instant)
                     .as_millis()) as f64;
                 self.context.t.set(t);
                 if self.context.condition.is_new()
@@ -763,7 +769,9 @@ pub mod runtime {
                         );
                         self.context.condition.set(condition);
                     }
-                    let t = (_acc_active_instant.duration_since(self.begin).as_millis()) as f64;
+                    let t = (_acc_active_instant
+                        .duration_since(self._grust_reserved_init_instant)
+                        .as_millis()) as f64;
                     self.context.t.set(t);
                     if self.context.condition.is_new()
                         || self.context.distance_m.is_new()
@@ -808,7 +816,9 @@ pub mod runtime {
                     self.reset_time_constraints(_speed_km_h_instant).await?;
                     self.context.reset();
                     self.context.speed_km_h.set(speed_km_h);
-                    let t = (_speed_km_h_instant.duration_since(self.begin).as_millis()) as f64;
+                    let t = (_speed_km_h_instant
+                        .duration_since(self._grust_reserved_init_instant)
+                        .as_millis()) as f64;
                     self.context.t.set(t);
                     if self.context.condition.is_new()
                         || self.context.distance_m.is_new()
@@ -875,7 +885,7 @@ pub mod runtime {
                         self.context.condition.set(condition);
                     }
                     let t = (_grust_reserved_instant
-                        .duration_since(self.begin)
+                        .duration_since(self._grust_reserved_init_instant)
                         .as_millis()) as f64;
                     self.context.t.set(t);
                     if self.context.condition.is_new()
@@ -951,7 +961,7 @@ pub mod runtime {
 }
 use grust::futures::{Stream, StreamExt};
 pub fn run(
-    INIT: std::time::Instant,
+    _grust_reserved_init_instant: std::time::Instant,
     input_stream: impl Stream<Item = runtime::RuntimeInput> + Send + 'static,
     init_signals: runtime::RuntimeInit,
 ) -> grust::futures::channel::mpsc::Receiver<runtime::RuntimeOutput> {
@@ -968,9 +978,9 @@ pub fn run(
         grust::futures::stream::select(input_stream, timers_stream),
         runtime::RuntimeInput::order,
     );
-    let service = runtime::Runtime::new(output_sink, timers_sink);
+    let service = runtime::Runtime::new(_grust_reserved_init_instant, output_sink, timers_sink);
     grust::tokio::spawn(async move {
-        let result = service.run_loop(INIT, prio_stream, init_signals).await;
+        let result = service.run_loop(prio_stream, init_signals).await;
         assert!(result.is_ok())
     });
     output_stream

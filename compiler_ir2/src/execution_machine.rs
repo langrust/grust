@@ -243,8 +243,10 @@ impl ToTokens for ExecutionMachineTokens<'_> {
 
                 // runtime state struct
                 {
+                    let init_instant = Ident::init_instant_var();
                     quote! {
                         pub struct Runtime {
+                            #init_instant: std::time::Instant,
                             #(#runtime_fields),*
                         }
                     }
@@ -295,6 +297,7 @@ impl ToTokens for ExecutionMachineTokens<'_> {
                             ) -> Runtime {
                             #(#services_init)*
                             Runtime {
+                                #init_instant,
                                 #(#field_values),*
                             }
                         }
@@ -430,12 +433,12 @@ impl ToTokens for ExecutionMachineTokens<'_> {
 
             let spawn_service = if let Some(spawn_fn) = self.spawn_fn {
                 quote! { #spawn_fn(async move {
-                    let result = service.run_loop(#init_instant, prio_stream, init_signals).await;
+                    let result = service.run_loop(prio_stream, init_signals).await;
                     assert!(result.is_ok())
                 }) }
             } else {
                 quote! { grust::tokio::spawn(async move {
-                    let result = service.run_loop(#init_instant, prio_stream, init_signals).await;
+                    let result = service.run_loop(prio_stream, init_signals).await;
                     assert!(result.is_ok())
                 }) }
             };
