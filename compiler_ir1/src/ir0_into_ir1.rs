@@ -157,7 +157,7 @@ mod interface_impl {
             )?;
 
             Ok(Ir1FlowImport {
-                import_token: self.import_token,
+                token: Either::Left(self.import_token),
                 id,
                 path,
                 colon_token: self.typed_path.colon,

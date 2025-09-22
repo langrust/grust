@@ -87,7 +87,7 @@ impl Ir1IntoIr2<&'_ Ctx> for FlowImport {
     type Ir2 = Option<InterfaceFlow>;
 
     fn into_ir2(self, symbol_table: &Ctx) -> Self::Ir2 {
-        if self.flow_type.eq(&Typ::event(Typ::unit())) {
+        if self.token.right().is_some() {
             None
         } else {
             Some(InterfaceFlow {
@@ -612,7 +612,7 @@ mod flow_instr {
                                 imports.insert(
                                     fresh_statement_id,
                                     FlowImport {
-                                        import_token: Default::default(),
+                                        token: Either::Right(Default::default()),
                                         id: fresh_id,
                                         path: format_ident!("{fresh_name}").into(),
                                         colon_token: Default::default(),
@@ -649,7 +649,7 @@ mod flow_instr {
                                 imports.insert(
                                     fresh_statement_id,
                                     FlowImport {
-                                        import_token: Default::default(),
+                                        token: Either::Right(Default::default()),
                                         id: fresh_id,
                                         path: format_ident!("{fresh_name}").into(),
                                         colon_token: Default::default(),
@@ -712,7 +712,7 @@ mod flow_instr {
             imports.insert(
                 fresh_statement_id,
                 FlowImport {
-                    import_token: Default::default(),
+                    token: Either::Right(Default::default()),
                     id: fresh_id,
                     path: format_ident!("{fresh_name}").into(),
                     colon_token: Default::default(),
@@ -741,7 +741,7 @@ mod flow_instr {
             imports.insert(
                 fresh_statement_id,
                 FlowImport {
-                    import_token: Default::default(),
+                    token: Either::Right(Default::default()),
                     id: fresh_id,
                     path: format_ident!("{fresh_name}").into(),
                     colon_token: Default::default(),
@@ -1209,10 +1209,7 @@ mod flow_instr {
                     // check if second activated
                     if_event_2
                 }
-                (false, false) => {
-                    debug_assert!(self.init_service);
-                    FlowInstruction::seq(vec![])
-                }
+                (false, false) => FlowInstruction::seq(vec![]),
             }
         }
 
