@@ -1,17 +1,17 @@
 use creusot_contracts::{ensures, logic, open, prelude, requires, DeepModel};
-#[requires(0 < sv_v @ && sv_v @ <= 50)]
-#[requires(0 < fv_v @ && fv_v @ < sv_v @ && sv_v @ - fv_v @ <= 10)]
-#[ensures(0 < result @ && result @ < 150)]
-#[ensures(result @ == logical :: safety_distance(sv_v @ , fv_v @))]
+# [requires (0 < sv_v @ && sv_v @ <= 50)]
+# [requires (0 < fv_v @ && fv_v @ < sv_v @ && sv_v @ - fv_v @ <= 10)]
+# [ensures (0 < result @ && result @ < 150)]
+# [ensures (result @ == logical :: safety_distance (sv_v @ , fv_v @))]
 pub fn safety_distance(sv_v: i64, fv_v: i64) -> i64 {
     let sv_d_stop = (sv_v * (0i64 + 1i64)) + ((sv_v * sv_v) / (2i64 * 6i64));
     let fv_d_stop = (fv_v * fv_v) / (2i64 * 6i64);
     sv_d_stop - fv_d_stop
 }
-#[requires((0 < d_grace @ && d_grace @ < 150) && (v @ < 0 && - v @ <= 10))]
-#[requires(d_grace @ > (v @ * v @) / (2 * 6))]
-#[ensures(0 <= result @ && result @ <= 6)]
-#[ensures(result @ == logical :: compute_braking(d_grace @ , v @))]
+# [requires ((0 < d_grace @ && d_grace @ < 150) && (v @ < 0 && - v @ <= 10))]
+# [requires (d_grace @ > (v @ * v @) / (2 * 6))]
+# [ensures (0 <= result @ && result @ <= 6)]
+# [ensures (result @ == logical :: compute_braking (d_grace @ , v @))]
 pub fn compute_braking(d_grace: i64, v: i64) -> i64 {
     (v * v) / (2i64 * d_grace)
 }
@@ -31,13 +31,10 @@ impl grust::core::Component for AccState {
     fn init() -> AccState {
         AccState {}
     }
-    #[requires(input.d @ < 150)]
-    #[requires(input.c == > (0 < input.s @ && input.s @ <= 50) &&
-    (0 < input.s @ + input.v @ && input.v @ < 0 && - input.v @ <= 10))]
-    #[requires(input.c == > input.d @ - logical ::
-    safety_distance(input.s @ , input.s @ + input.v @) >
-    (input.v @ * input.v @) / (2 * 6))]
-    #[ensures(0 <= result.b @ && result.b @ <= 6)]
+    # [requires (input . d @ < 150)]
+    # [requires (input . c == > (0 < input . s @ && input . s @ <= 50) && (0 < input . s @ + input . v @ && input . v @ < 0 && - input . v @ <= 10))]
+    # [requires (input . c == > input . d @ - logical :: safety_distance (input . s @ , input . s @ + input . v @) > (input . v @ * input . v @) / (2 * 6))]
+    # [ensures (0 <= result . b @ && result . b @ <= 6)]
     fn step(&mut self, input: AccInput) -> AccOutput {
         let (d_safe, b, fv_v) = match input.c {
             true => {
