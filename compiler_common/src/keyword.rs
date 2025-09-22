@@ -24,6 +24,7 @@ custom_keyword!(signal);
 custom_keyword!(event);
 custom_keyword!(import);
 custom_keyword!(export);
+custom_keyword!(timer);
 
 // Greact operators keywords.
 custom_keyword!(sample);

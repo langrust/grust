@@ -259,7 +259,7 @@ pub struct FlowInstantiation {
 /// Flow statement.
 #[derive(Clone)]
 pub struct FlowImport {
-    pub import_token: keyword::import,
+    pub token: Either<keyword::import, keyword::timer>,
     /// Identifier of the flow and its type.
     pub id: usize,
     pub path: syn::Path,
