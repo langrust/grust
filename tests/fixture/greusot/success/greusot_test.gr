@@ -1,0 +1,12 @@
+
+node test(i1: int, i2: int)
+    requires  {0 < i1 && i1 < i2 && i2 < 1000}
+    ensures   {0 <= o && o <= i1}
+    invariant {0 < z && z <= 1000}
+{
+    out o: int = y / z;
+    x: int = i2 - i1;
+    y: int = i1 / x;
+    z_prime: int = z + x;
+    z: int = 1 fby if z_prime > 1000 then 1 else z_prime;
+}

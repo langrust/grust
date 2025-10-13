@@ -1,0 +1,273 @@
+---
+source: tests/parser.rs
+expression: file
+---
+typedefs: []
+functions: []
+nodes:
+  - id: counter
+    is_component: false
+    inputs:
+      - - res
+        - Boolean
+      - - tick
+        - Boolean
+    equations:
+      - - o
+        - scope: Output
+          id: o
+          signal_type: Integer
+          expression:
+            kind:
+              Expression:
+                expression:
+                  Application:
+                    function_expression:
+                      kind:
+                        Expression:
+                          expression:
+                            Identifier:
+                              id: if_then_else
+                      location: ~
+                    inputs:
+                      - kind:
+                          Expression:
+                            expression:
+                              Identifier:
+                                id: res
+                        location: ~
+                      - kind:
+                          Expression:
+                            expression:
+                              Constant:
+                                constant:
+                                  Integer: 0
+                        location: ~
+                      - kind:
+                          Expression:
+                            expression:
+                              Application:
+                                function_expression:
+                                  kind:
+                                    Expression:
+                                      expression:
+                                        Identifier:
+                                          id: " + "
+                                  location: ~
+                                inputs:
+                                  - kind:
+                                      Expression:
+                                        expression:
+                                          Application:
+                                            function_expression:
+                                              kind:
+                                                Expression:
+                                                  expression:
+                                                    Identifier:
+                                                      id: (_)
+                                              location: ~
+                                            inputs:
+                                              - kind:
+                                                  FollowedBy:
+                                                    constant:
+                                                      kind:
+                                                        Expression:
+                                                          expression:
+                                                            Constant:
+                                                              constant:
+                                                                Integer: 0
+                                                      location: ~
+                                                    expression:
+                                                      kind:
+                                                        Expression:
+                                                          expression:
+                                                            Identifier:
+                                                              id: o
+                                                      location: ~
+                                                location: ~
+                                    location: ~
+                                  - kind:
+                                      Expression:
+                                        expression:
+                                          Identifier:
+                                            id: inc
+                                    location: ~
+                        location: ~
+            location: ~
+          location: ~
+      - - inc
+        - scope: Local
+          id: inc
+          signal_type: Integer
+          expression:
+            kind:
+              Expression:
+                expression:
+                  Application:
+                    function_expression:
+                      kind:
+                        Expression:
+                          expression:
+                            Identifier:
+                              id: if_then_else
+                      location: ~
+                    inputs:
+                      - kind:
+                          Expression:
+                            expression:
+                              Identifier:
+                                id: tick
+                        location: ~
+                      - kind:
+                          Expression:
+                            expression:
+                              Constant:
+                                constant:
+                                  Integer: 1
+                        location: ~
+                      - kind:
+                          Expression:
+                            expression:
+                              Constant:
+                                constant:
+                                  Integer: 0
+                        location: ~
+            location: ~
+          location: ~
+    contract:
+      requires: []
+      ensures: []
+      invariant: []
+    location: ~
+component:
+  id: main
+  is_component: true
+  inputs: []
+  equations:
+    - - y
+      - scope: Output
+        id: y
+        signal_type: Integer
+        expression:
+          kind:
+            Expression:
+              expression:
+                FieldAccess:
+                  expression:
+                    kind:
+                      Expression:
+                        expression:
+                          Application:
+                            function_expression:
+                              kind:
+                                Expression:
+                                  expression:
+                                    Identifier:
+                                      id: counter
+                              location: ~
+                            inputs:
+                              - kind:
+                                  FollowedBy:
+                                    constant:
+                                      kind:
+                                        Expression:
+                                          expression:
+                                            Constant:
+                                              constant:
+                                                Boolean: false
+                                      location: ~
+                                    expression:
+                                      kind:
+                                        Expression:
+                                          expression:
+                                            Application:
+                                              function_expression:
+                                                kind:
+                                                  Expression:
+                                                    expression:
+                                                      Identifier:
+                                                        id: (_)
+                                                location: ~
+                                              inputs:
+                                                - kind:
+                                                    Expression:
+                                                      expression:
+                                                        Application:
+                                                          function_expression:
+                                                            kind:
+                                                              Expression:
+                                                                expression:
+                                                                  Identifier:
+                                                                    id: " > "
+                                                            location: ~
+                                                          inputs:
+                                                            - kind:
+                                                                Expression:
+                                                                  expression:
+                                                                    Identifier:
+                                                                      id: y
+                                                              location: ~
+                                                            - kind:
+                                                                Expression:
+                                                                  expression:
+                                                                    Constant:
+                                                                      constant:
+                                                                        Integer: 35
+                                                              location: ~
+                                                  location: ~
+                                      location: ~
+                                location: ~
+                              - kind:
+                                  Expression:
+                                    expression:
+                                      Identifier:
+                                        id: half
+                                location: ~
+                    location: ~
+                  field: o
+          location: ~
+        location: ~
+    - - half
+      - scope: Local
+        id: half
+        signal_type: Boolean
+        expression:
+          kind:
+            FollowedBy:
+              constant:
+                kind:
+                  Expression:
+                    expression:
+                      Constant:
+                        constant:
+                          Boolean: true
+                location: ~
+              expression:
+                kind:
+                  Expression:
+                    expression:
+                      Application:
+                        function_expression:
+                          kind:
+                            Expression:
+                              expression:
+                                Identifier:
+                                  id: "!"
+                          location: ~
+                        inputs:
+                          - kind:
+                              Expression:
+                                expression:
+                                  Identifier:
+                                    id: half
+                            location: ~
+                location: ~
+          location: ~
+        location: ~
+  contract:
+    requires: []
+    ensures: []
+    invariant: []
+  location: ~
+interface: ~
+location: ~

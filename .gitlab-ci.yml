@@ -1,0 +1,146 @@
+variables:
+  ##############################################################################
+  # CI ENVIRONMENT
+  ##############################################################################
+
+  # setup NPM configuration
+  npm_config_prefer_offline: 'true'
+  npm_config_audit: 'false'
+  npm_config_unsafe_perm: 'true'
+  npm_config_cache: $CI_PROJECT_DIR/.npm
+  CARGO_HOME: $CI_PROJECT_DIR/.cargo
+
+################################################################################
+# Defaults
+################################################################################
+default:
+  image: artifactory.tls.renault.fr/docker/langrust/grustops
+  tags: [kube, rswl]
+  interruptible: true
+  retry:
+    max: 2
+    when: [runner_system_failure]
+  artifacts:
+    when: always
+    expire_in: 3 week
+  cache:
+    key: shared-cache
+    paths:
+      - .npm/
+      - target/
+      - .cargo/.crates.toml
+      - .cargo/.crates2.json
+      - .cargo/bin/
+      - .cargo/registry/index/
+      - .cargo/registry/cache/
+      - .cargo/git/db/
+
+################################################################################
+#
+# Stages
+#
+################################################################################
+# prettier-ignore
+stages:
+  - check
+  - build     
+  - test
+
+################################################################################
+#
+# Workflow
+#
+# Setups  when pipelines are created.
+# see docs at <https://docs.gitlab.com/ee/ci/yaml/#workflow>.
+#
+################################################################################
+workflow:
+  name: '$PIPELINE_NAME'
+  rules:
+    # Run pipeline for merge request
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+      variables:
+        PIPELINE_NAME:
+          'Merge $CI_MERGE_REQUEST_SOURCE_BRANCH_NAME into
+          $CI_MERGE_REQUEST_TARGET_BRANCH_NAME'
+
+    # Run pipeline for baseline
+    - if: $CI_COMMIT_TAG
+      variables:
+        PIPELINE_NAME: 'Tag $CI_COMMIT_TAG'
+
+    # Run pipeline for mainline
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+      variables:
+        PIPELINE_NAME: 'Latest $CI_COMMIT_BRANCH'
+
+    # Run pipeline on protected branches
+    - if: $CI_COMMIT_REF_PROTECTED == "true"
+      variables:
+        PIPELINE_NAME: 'Protected $CI_COMMIT_REF_NAME'
+
+    # Always run pipeline when scheduled
+    - if: $CI_PIPELINE_SOURCE == "schedule"
+      variables:
+        PIPELINE_NAME: 'Scheduled $CI_COMMIT_REF_NAME'
+
+    # Run pipeline from the Web UI
+    - if: $CI_PIPELINE_SOURCE == "web"
+      variables:
+        PIPELINE_NAME: 'Manual $CI_COMMIT_REF_NAME'
+
+check:rustfmt:
+  needs: []
+  stage: check
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+      allow_failure: true
+    - if: $CI_PIPELINE_SOURCE == "web"
+      when: manual
+      allow_failure: true
+  script:
+    - cargo fmt --all -- --check
+
+test:cargo:
+  needs: []
+  stage: test
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+    - if: $CI_COMMIT_TAG
+    - if: $CI_PIPELINE_SOURCE == "web"
+      when: manual
+      allow_failure: true
+  script:
+    - rustc --version && cargo --version
+    - cargo nextest run --profile ci
+  artifacts:
+    when: always
+    reports:
+      junit: $CI_PROJECT_DIR/target/nextest/ci/*.xml
+
+build:cargo:
+  needs: []
+  stage: build
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+    - if: $CI_COMMIT_TAG
+    - if: $CI_PIPELINE_SOURCE == "web"
+      when: manual
+      allow_failure: true
+  script:
+    - rustc --version && cargo --version
+    - cargo build --verbose
+
+check:commit:
+  stage: check
+  needs: []
+  cache: []
+  rules:
+    - if: $CI_MERGE_REQUEST_ID
+  before_script: []
+  script:
+    - git fetch origin $CI_MERGE_REQUEST_TARGET_BRANCH_NAME
+    - standard-commitlint --from origin/$CI_MERGE_REQUEST_TARGET_BRANCH_NAME

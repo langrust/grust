@@ -1,0 +1,322 @@
+---
+source: tests/parser.rs
+expression: file
+---
+typedefs: []
+functions:
+  - id: brakes
+    inputs:
+      - - distance
+        - Float
+      - - speed
+        - Float
+    statements:
+      - id: d
+        element_type: Float
+        expression:
+          kind:
+            Application:
+              function_expression:
+                kind:
+                  Identifier:
+                    id: " * "
+                location: ~
+              inputs:
+                - kind:
+                    Identifier:
+                      id: speed
+                  location: ~
+                - kind:
+                    Constant:
+                      constant:
+                        Float: 0.278
+                  location: ~
+          location: ~
+        location: ~
+    returned:
+      - Float
+      - kind:
+          Application:
+            function_expression:
+              kind:
+                Identifier:
+                  id: if_then_else
+              location: ~
+            inputs:
+              - kind:
+                  Application:
+                    function_expression:
+                      kind:
+                        Identifier:
+                          id: " < "
+                      location: ~
+                    inputs:
+                      - kind:
+                          Identifier:
+                            id: d
+                        location: ~
+                      - kind:
+                          Identifier:
+                            id: distance
+                        location: ~
+                location: ~
+              - kind:
+                  Identifier:
+                    id: SoftBrake
+                location: ~
+              - kind:
+                  Identifier:
+                    id: UrgentBrake
+                location: ~
+        location: ~
+    location: ~
+nodes: []
+component:
+  id: braking_state
+  is_component: true
+  inputs:
+    - - pedest
+      - Option: Float
+    - - speed
+      - Float
+  equations:
+    - - state
+      - scope: Output
+        id: state
+        signal_type:
+          NotDefinedYet: Braking
+        expression:
+          kind:
+            Expression:
+              expression:
+                When:
+                  id: d
+                  option:
+                    kind:
+                      Expression:
+                        expression:
+                          Identifier:
+                            id: pedest
+                    location: ~
+                  present:
+                    kind:
+                      Expression:
+                        expression:
+                          Application:
+                            function_expression:
+                              kind:
+                                Expression:
+                                  expression:
+                                    Identifier:
+                                      id: brakes
+                              location: ~
+                            inputs:
+                              - kind:
+                                  Expression:
+                                    expression:
+                                      Identifier:
+                                        id: d
+                                location: ~
+                              - kind:
+                                  Expression:
+                                    expression:
+                                      Identifier:
+                                        id: speed
+                                location: ~
+                    location: ~
+                  default:
+                    kind:
+                      Expression:
+                        expression:
+                          Identifier:
+                            id: previous_state
+                    location: ~
+          location: ~
+        location: ~
+    - - previous_state
+      - scope: Local
+        id: previous_state
+        signal_type:
+          NotDefinedYet: Braking
+        expression:
+          kind:
+            FollowedBy:
+              constant:
+                kind:
+                  Expression:
+                    expression:
+                      Identifier:
+                        id: NoBrake
+                location: ~
+              expression:
+                kind:
+                  Expression:
+                    expression:
+                      Identifier:
+                        id: state
+                location: ~
+          location: ~
+        location: ~
+  contract:
+    requires:
+      - kind:
+          Binary:
+            op: And
+            left:
+              kind:
+                Binary:
+                  op: Leq
+                  left:
+                    kind:
+                      Constant:
+                        constant:
+                          Float: 0
+                    location: ~
+                  right:
+                    kind:
+                      Identifier:
+                        id: speed
+                    location: ~
+              location: ~
+            right:
+              kind:
+                Binary:
+                  op: Low
+                  left:
+                    kind:
+                      Identifier:
+                        id: speed
+                    location: ~
+                  right:
+                    kind:
+                      Constant:
+                        constant:
+                          Float: 50
+                    location: ~
+              location: ~
+        location: ~
+    ensures: []
+    invariant: []
+  location: ~
+interface:
+  id: urban_braking
+  imports:
+    - - Signal: Float
+      - kind:
+          Path:
+            ident: car
+            path:
+              kind:
+                Name:
+                  ident: speed_km_h
+              location: ~
+        location: ~
+    - - Event: Float
+      - kind:
+          Path:
+            ident: car
+            path:
+              kind:
+                Path:
+                  ident: detect
+                  path:
+                    kind:
+                      Path:
+                        ident: left
+                        path:
+                          kind:
+                            Rename:
+                              ident: pedestrian
+                              rename: l
+                          location: ~
+                    location: ~
+              location: ~
+        location: ~
+    - - Event: Float
+      - kind:
+          Path:
+            ident: car
+            path:
+              kind:
+                Path:
+                  ident: detect
+                  path:
+                    kind:
+                      Path:
+                        ident: right
+                        path:
+                          kind:
+                            Rename:
+                              ident: pedestrian
+                              rename: r
+                          location: ~
+                    location: ~
+              location: ~
+        location: ~
+  exports:
+    - kind:
+        Path:
+          ident: car
+          path:
+            kind:
+              Path:
+                ident: urban
+                path:
+                  kind:
+                    Path:
+                      ident: braking
+                      path:
+                        kind:
+                          Name:
+                            ident: brakes
+                        location: ~
+                  location: ~
+            location: ~
+      location: ~
+  flow_statements:
+    - ident: pedestrian
+      flow_type:
+        Event: Float
+      flow_expression:
+        kind:
+          Timeout:
+            flow_expression:
+              kind:
+                Merge:
+                  flow_expression_1:
+                    kind:
+                      Ident:
+                        ident: l
+                    location: ~
+                  flow_expression_2:
+                    kind:
+                      Ident:
+                        ident: r
+                    location: ~
+              location: ~
+            timeout_ms: 500
+        location: ~
+      location: ~
+    - ident: brakes
+      flow_type:
+        Signal:
+          NotDefinedYet: Braking
+      flow_expression:
+        kind:
+          ComponentCall:
+            ident_component: braking_state
+            inputs:
+              - kind:
+                  Ident:
+                    ident: pedestrian
+                location: ~
+              - kind:
+                  Ident:
+                    ident: speed_km_h
+                location: ~
+            ident_signal: state
+        location: ~
+      location: ~
+  location: ~
+location: ~
+

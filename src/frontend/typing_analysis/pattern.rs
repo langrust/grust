@@ -1,0 +1,109 @@
+use crate::common::r#type::Type;
+use crate::error::{Error, TerminationError};
+use crate::hir::pattern::{Pattern, PatternKind};
+use crate::symbol_table::SymbolTable;
+
+impl Pattern {
+    /// Tries to type the given construct.
+    pub fn typing(
+        &mut self,
+        expected_type: &Type,
+        symbol_table: &mut SymbolTable,
+        errors: &mut Vec<Error>,
+    ) -> Result<(), TerminationError> {
+        match self.kind {
+            PatternKind::Constant { ref constant } => {
+                let pattern_type = constant.get_type();
+                pattern_type.eq_check(&expected_type, self.location.clone(), errors)?;
+                self.typing = Some(pattern_type);
+                Ok(())
+            }
+            PatternKind::Identifier { ref id } => {
+                symbol_table.set_type(*id, expected_type.clone());
+                self.typing = Some(expected_type.clone());
+                Ok(())
+            }
+            PatternKind::Structure {
+                ref id,
+                ref mut fields,
+            } => {
+                fields
+                    .iter_mut()
+                    .map(|(id, pattern)| {
+                        let expected_type = symbol_table.get_type(*id).clone();
+                        pattern.typing(&expected_type, symbol_table, errors)?;
+                        // check pattern type
+                        let pattern_type = pattern.get_type().unwrap();
+                        pattern_type.eq_check(&expected_type, self.location.clone(), errors)
+                    })
+                    .collect::<Vec<Result<(), TerminationError>>>()
+                    .into_iter()
+                    .collect::<Result<(), TerminationError>>()?;
+                self.typing = Some(Type::Structure {
+                    name: symbol_table.get_name(*id).clone(),
+                    id: *id,
+                });
+                Ok(())
+            }
+            PatternKind::Enumeration { ref enum_id, .. } => {
+                self.typing = Some(Type::Enumeration {
+                    name: symbol_table.get_name(*enum_id).clone(),
+                    id: *enum_id,
+                });
+                Ok(())
+            }
+            PatternKind::Tuple { ref mut elements } => {
+                // todo: check number of type vs number of elements
+                match expected_type {
+                    Type::Tuple(types) => {
+                        elements
+                            .iter_mut()
+                            .zip(types)
+                            .map(|(pattern, expected_type)| {
+                                pattern.typing(expected_type, symbol_table, errors)
+                            })
+                            .collect::<Vec<Result<(), TerminationError>>>()
+                            .into_iter()
+                            .collect::<Result<(), TerminationError>>()?;
+                        let types = elements
+                            .iter()
+                            .map(|pattern| pattern.get_type().unwrap().clone())
+                            .collect();
+                        self.typing = Some(Type::Tuple(types));
+                        Ok(())
+                    }
+                    _ => {
+                        let error = Error::ExpectTuplePattern {
+                            location: self.location.clone(),
+                        };
+                        errors.push(error);
+                        Err(TerminationError)
+                    }
+                }
+            }
+            PatternKind::Some { ref mut pattern } => match expected_type {
+                Type::Option(expected_type) => {
+                    pattern.typing(expected_type, symbol_table, errors)?;
+                    let pattern_type = pattern.get_type().unwrap().clone();
+                    self.typing = Some(Type::Option(Box::new(pattern_type)));
+                    Ok(())
+                }
+                _ => {
+                    let error = Error::ExpectOptionPattern {
+                        location: self.location.clone(),
+                    };
+                    errors.push(error);
+                    Err(TerminationError)
+                }
+            },
+            PatternKind::None => {
+                self.typing = Some(Type::Option(Box::new(Type::Any)));
+                Ok(())
+            }
+            PatternKind::Default => {
+                self.typing = Some(Type::Any);
+                Ok(())
+            }
+        }
+    }
+}

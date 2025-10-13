@@ -1,0 +1,35 @@
+syntax = "proto3";
+
+package interface;
+
+service Interface {
+    rpc Compute(Inputs) returns (Empty) {}
+}
+
+service NextInterface {
+    rpc AddOutputs(Outputs) returns (Empty) {}
+}
+
+message Inputs {
+    message Distances {
+        repeated int64 distances = 1;
+    }
+    message PointCloud {
+        repeated int64 point_cloud = 1;
+    }
+    message RgbImages {
+        repeated int64 rgb_images = 1;
+    }
+    optional Distances distances = 1;
+    optional PointCloud point_cloud = 2;
+    optional RgbImages rgb_images = 3;
+}
+
+message Outputs {
+    message MovingObjects {
+        repeated int64 moving_objects = 1;
+    }
+    optional MovingObjects moving_objects = 1;
+}
+
+message Empty {}

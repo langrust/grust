@@ -1,0 +1,23 @@
+enum Button {
+    Released,
+    Pressed,
+}
+
+enum ResetState {
+    InProgress,
+    Confirmed,
+}
+
+node counter(res: bool, inc: int) {
+    out o: int = if res then 0 else (0 fby o) + inc;
+}
+
+node reset_button(button_state: Button, period: int, reset_limit_1: int, reset_limit_2: int) {
+    out user_reset_request_state : ResetState = reset_state_management(button_state, counter, reset_limit_1);
+    out user_reset_request: bool = match (button_state) {
+        Button::Released => false fby user_reset_request,
+        Button::Pressed => counter >= reset_limit_1 + reset_limit_2,
+    };
+    counter: int = counter(res, period).o;
+    res: bool = (button_state == Button::Pressed) && (true fby button_state == Button::Released);
+}

@@ -1,0 +1,601 @@
+---
+source: tests/hir_from_ast.rs
+expression: file
+---
+typedefs:
+  - id: 19
+    kind:
+      Enumeration:
+        elements:
+          - 17
+          - 18
+    location: ~
+  - id: 22
+    kind:
+      Enumeration:
+        elements:
+          - 20
+          - 21
+    location: ~
+functions:
+  - id: 26
+    statements:
+      - id: 40
+        expression:
+          kind:
+            Match:
+              expression:
+                kind:
+                  Application:
+                    function_expression:
+                      kind:
+                        Identifier:
+                          id: 2
+                      typing: ~
+                      location: ~
+                      dependencies: ~
+                    inputs:
+                      - kind:
+                          Identifier:
+                            id: 23
+                        typing: ~
+                        location: ~
+                        dependencies: ~
+                typing: ~
+                location: ~
+                dependencies: ~
+              arms:
+                - - kind:
+                      Enumeration:
+                        enum_id: 19
+                        elem_id: 17
+                    typing: ~
+                    location: ~
+                  - ~
+                  - []
+                  - kind:
+                      Enumeration:
+                        enum_id: 22
+                        elem_id: 21
+                    typing: ~
+                    location: ~
+                    dependencies: ~
+                - - kind:
+                      Enumeration:
+                        enum_id: 19
+                        elem_id: 18
+                    typing: ~
+                    location: ~
+                  - kind:
+                      Application:
+                        function_expression:
+                          kind:
+                            Identifier:
+                              id: 11
+                          typing: ~
+                          location: ~
+                          dependencies: ~
+                        inputs:
+                          - kind:
+                              Identifier:
+                                id: 24
+                            typing: ~
+                            location: ~
+                            dependencies: ~
+                          - kind:
+                              Identifier:
+                                id: 25
+                            typing: ~
+                            location: ~
+                            dependencies: ~
+                    typing: ~
+                    location: ~
+                    dependencies: ~
+                  - []
+                  - kind:
+                      Enumeration:
+                        enum_id: 22
+                        elem_id: 20
+                    typing: ~
+                    location: ~
+                    dependencies: ~
+                - - kind: Default
+                    typing: ~
+                    location: ~
+                  - ~
+                  - []
+                  - kind:
+                      Enumeration:
+                        enum_id: 22
+                        elem_id: 21
+                    typing: ~
+                    location: ~
+                    dependencies: ~
+          typing: ~
+          location: ~
+          dependencies: ~
+        location: ~
+    returned:
+      kind:
+        Identifier:
+          id: 40
+      typing: ~
+      location: ~
+      dependencies: ~
+    location: ~
+nodes:
+  - id: 30
+    unscheduled_equations:
+      29:
+        id: 29
+        expression:
+          kind:
+            Expression:
+              expression:
+                Application:
+                  function_expression:
+                    kind:
+                      Expression:
+                        expression:
+                          Identifier:
+                            id: 15
+                    typing: ~
+                    location: ~
+                    dependencies: ~
+                  inputs:
+                    - kind:
+                        Expression:
+                          expression:
+                            Identifier:
+                              id: 27
+                      typing: ~
+                      location: ~
+                      dependencies: ~
+                    - kind:
+                        Expression:
+                          expression:
+                            Constant:
+                              constant:
+                                Integer: 0
+                      typing: ~
+                      location: ~
+                      dependencies: ~
+                    - kind:
+                        Expression:
+                          expression:
+                            Application:
+                              function_expression:
+                                kind:
+                                  Expression:
+                                    expression:
+                                      Identifier:
+                                        id: 5
+                                typing: ~
+                                location: ~
+                                dependencies: ~
+                              inputs:
+                                - kind:
+                                    Expression:
+                                      expression:
+                                        Application:
+                                          function_expression:
+                                            kind:
+                                              Expression:
+                                                expression:
+                                                  Identifier:
+                                                    id: 2
+                                            typing: ~
+                                            location: ~
+                                            dependencies: ~
+                                          inputs:
+                                            - kind:
+                                                FollowedBy:
+                                                  constant:
+                                                    kind:
+                                                      Expression:
+                                                        expression:
+                                                          Constant:
+                                                            constant:
+                                                              Integer: 0
+                                                    typing: ~
+                                                    location: ~
+                                                    dependencies: ~
+                                                  expression:
+                                                    kind:
+                                                      Expression:
+                                                        expression:
+                                                          Identifier:
+                                                            id: 29
+                                                    typing: ~
+                                                    location: ~
+                                                    dependencies: ~
+                                              typing: ~
+                                              location: ~
+                                              dependencies: ~
+                                  typing: ~
+                                  location: ~
+                                  dependencies: ~
+                                - kind:
+                                    Expression:
+                                      expression:
+                                        Identifier:
+                                          id: 28
+                                  typing: ~
+                                  location: ~
+                                  dependencies: ~
+                      typing: ~
+                      location: ~
+                      dependencies: ~
+          typing: ~
+          location: ~
+          dependencies: ~
+        location: ~
+    unitary_nodes: {}
+    contract:
+      requires: []
+      ensures: []
+      invariant: []
+    location: ~
+    graph: {}
+  - id: 39
+    unscheduled_equations:
+      35:
+        id: 35
+        expression:
+          kind:
+            Expression:
+              expression:
+                Application:
+                  function_expression:
+                    kind:
+                      Expression:
+                        expression:
+                          Identifier:
+                            id: 26
+                    typing: ~
+                    location: ~
+                    dependencies: ~
+                  inputs:
+                    - kind:
+                        Expression:
+                          expression:
+                            Identifier:
+                              id: 31
+                      typing: ~
+                      location: ~
+                      dependencies: ~
+                    - kind:
+                        Expression:
+                          expression:
+                            Identifier:
+                              id: 37
+                      typing: ~
+                      location: ~
+                      dependencies: ~
+                    - kind:
+                        Expression:
+                          expression:
+                            Identifier:
+                              id: 33
+                      typing: ~
+                      location: ~
+                      dependencies: ~
+          typing: ~
+          location: ~
+          dependencies: ~
+        location: ~
+      36:
+        id: 36
+        expression:
+          kind:
+            Expression:
+              expression:
+                Match:
+                  expression:
+                    kind:
+                      Expression:
+                        expression:
+                          Application:
+                            function_expression:
+                              kind:
+                                Expression:
+                                  expression:
+                                    Identifier:
+                                      id: 2
+                              typing: ~
+                              location: ~
+                              dependencies: ~
+                            inputs:
+                              - kind:
+                                  Expression:
+                                    expression:
+                                      Identifier:
+                                        id: 31
+                                typing: ~
+                                location: ~
+                                dependencies: ~
+                    typing: ~
+                    location: ~
+                    dependencies: ~
+                  arms:
+                    - - kind:
+                          Enumeration:
+                            enum_id: 19
+                            elem_id: 17
+                        typing: ~
+                        location: ~
+                      - ~
+                      - []
+                      - kind:
+                          FollowedBy:
+                            constant:
+                              kind:
+                                Expression:
+                                  expression:
+                                    Constant:
+                                      constant:
+                                        Boolean: false
+                              typing: ~
+                              location: ~
+                              dependencies: ~
+                            expression:
+                              kind:
+                                Expression:
+                                  expression:
+                                    Identifier:
+                                      id: 36
+                              typing: ~
+                              location: ~
+                              dependencies: ~
+                        typing: ~
+                        location: ~
+                        dependencies: ~
+                    - - kind:
+                          Enumeration:
+                            enum_id: 19
+                            elem_id: 18
+                        typing: ~
+                        location: ~
+                      - ~
+                      - []
+                      - kind:
+                          Expression:
+                            expression:
+                              Application:
+                                function_expression:
+                                  kind:
+                                    Expression:
+                                      expression:
+                                        Identifier:
+                                          id: 11
+                                  typing: ~
+                                  location: ~
+                                  dependencies: ~
+                                inputs:
+                                  - kind:
+                                      Expression:
+                                        expression:
+                                          Identifier:
+                                            id: 37
+                                    typing: ~
+                                    location: ~
+                                    dependencies: ~
+                                  - kind:
+                                      Expression:
+                                        expression:
+                                          Application:
+                                            function_expression:
+                                              kind:
+                                                Expression:
+                                                  expression:
+                                                    Identifier:
+                                                      id: 5
+                                              typing: ~
+                                              location: ~
+                                              dependencies: ~
+                                            inputs:
+                                              - kind:
+                                                  Expression:
+                                                    expression:
+                                                      Identifier:
+                                                        id: 33
+                                                typing: ~
+                                                location: ~
+                                                dependencies: ~
+                                              - kind:
+                                                  Expression:
+                                                    expression:
+                                                      Identifier:
+                                                        id: 34
+                                                typing: ~
+                                                location: ~
+                                                dependencies: ~
+                                    typing: ~
+                                    location: ~
+                                    dependencies: ~
+                        typing: ~
+                        location: ~
+                        dependencies: ~
+          typing: ~
+          location: ~
+          dependencies: ~
+        location: ~
+      37:
+        id: 37
+        expression:
+          kind:
+            NodeApplication:
+              node_id: 30
+              inputs:
+                - - 27
+                  - kind:
+                      Expression:
+                        expression:
+                          Identifier:
+                            id: 38
+                    typing: ~
+                    location: ~
+                    dependencies: ~
+                - - 28
+                  - kind:
+                      Expression:
+                        expression:
+                          Identifier:
+                            id: 32
+                    typing: ~
+                    location: ~
+                    dependencies: ~
+              output_id: 29
+          typing: ~
+          location: ~
+          dependencies: ~
+        location: ~
+      38:
+        id: 38
+        expression:
+          kind:
+            Expression:
+              expression:
+                Application:
+                  function_expression:
+                    kind:
+                      Expression:
+                        expression:
+                          Identifier:
+                            id: 7
+                    typing: ~
+                    location: ~
+                    dependencies: ~
+                  inputs:
+                    - kind:
+                        Expression:
+                          expression:
+                            Application:
+                              function_expression:
+                                kind:
+                                  Expression:
+                                    expression:
+                                      Identifier:
+                                        id: 2
+                                typing: ~
+                                location: ~
+                                dependencies: ~
+                              inputs:
+                                - kind:
+                                    Expression:
+                                      expression:
+                                        Application:
+                                          function_expression:
+                                            kind:
+                                              Expression:
+                                                expression:
+                                                  Identifier:
+                                                    id: 9
+                                            typing: ~
+                                            location: ~
+                                            dependencies: ~
+                                          inputs:
+                                            - kind:
+                                                Expression:
+                                                  expression:
+                                                    Identifier:
+                                                      id: 31
+                                              typing: ~
+                                              location: ~
+                                              dependencies: ~
+                                            - kind:
+                                                Expression:
+                                                  expression:
+                                                    Enumeration:
+                                                      enum_id: 19
+                                                      elem_id: 18
+                                              typing: ~
+                                              location: ~
+                                              dependencies: ~
+                                  typing: ~
+                                  location: ~
+                                  dependencies: ~
+                      typing: ~
+                      location: ~
+                      dependencies: ~
+                    - kind:
+                        Expression:
+                          expression:
+                            Application:
+                              function_expression:
+                                kind:
+                                  Expression:
+                                    expression:
+                                      Identifier:
+                                        id: 2
+                                typing: ~
+                                location: ~
+                                dependencies: ~
+                              inputs:
+                                - kind:
+                                    FollowedBy:
+                                      constant:
+                                        kind:
+                                          Expression:
+                                            expression:
+                                              Constant:
+                                                constant:
+                                                  Boolean: true
+                                        typing: ~
+                                        location: ~
+                                        dependencies: ~
+                                      expression:
+                                        kind:
+                                          Expression:
+                                            expression:
+                                              Application:
+                                                function_expression:
+                                                  kind:
+                                                    Expression:
+                                                      expression:
+                                                        Identifier:
+                                                          id: 9
+                                                  typing: ~
+                                                  location: ~
+                                                  dependencies: ~
+                                                inputs:
+                                                  - kind:
+                                                      Expression:
+                                                        expression:
+                                                          Identifier:
+                                                            id: 31
+                                                    typing: ~
+                                                    location: ~
+                                                    dependencies: ~
+                                                  - kind:
+                                                      Expression:
+                                                        expression:
+                                                          Enumeration:
+                                                            enum_id: 19
+                                                            elem_id: 17
+                                                    typing: ~
+                                                    location: ~
+                                                    dependencies: ~
+                                        typing: ~
+                                        location: ~
+                                        dependencies: ~
+                                  typing: ~
+                                  location: ~
+                                  dependencies: ~
+                      typing: ~
+                      location: ~
+                      dependencies: ~
+          typing: ~
+          location: ~
+          dependencies: ~
+        location: ~
+    unitary_nodes: {}
+    contract:
+      requires: []
+      ensures: []
+      invariant: []
+    location: ~
+    graph: {}
+component: ~
+interface: ~
+location: ~

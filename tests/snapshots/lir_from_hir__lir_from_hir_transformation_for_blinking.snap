@@ -1,0 +1,284 @@
+---
+source: tests/lir_from_hir.rs
+expression: project
+---
+items:
+  - Function:
+      name: xor
+      generics: []
+      inputs:
+        - - t
+          - Boolean
+        - - b
+          - Boolean
+      output: Boolean
+      body:
+        statements:
+          - ExpressionLast:
+              expression:
+                IfThenElse:
+                  condition:
+                    Identifier:
+                      identifier: t
+                  then_branch:
+                    statements:
+                      - ExpressionLast:
+                          expression:
+                            FunctionCall:
+                              function:
+                                Identifier:
+                                  identifier: "!"
+                              arguments:
+                                - Identifier:
+                                    identifier: b
+                  else_branch:
+                    statements:
+                      - ExpressionLast:
+                          expression:
+                            Identifier:
+                              identifier: b
+      imports: []
+  - NodeFile:
+      name: counter_o
+      imports: []
+      input:
+        node_name: counter_o
+        elements:
+          - identifier: res
+            type: Boolean
+          - identifier: tick
+            type: Boolean
+        generics: []
+      state:
+        node_name: counter_o
+        elements:
+          - Buffer:
+              identifier: mem_o
+              type: Integer
+        step:
+          node_name: counter_o
+          generics: []
+          output_type: Integer
+          body:
+            - Let:
+                identifier: inc
+                expression:
+                  IfThenElse:
+                    condition:
+                      InputAccess:
+                        identifier: tick
+                    then_branch:
+                      statements:
+                        - ExpressionLast:
+                            expression:
+                              Literal:
+                                literal:
+                                  Integer: 1
+                    else_branch:
+                      statements:
+                        - ExpressionLast:
+                            expression:
+                              Literal:
+                                literal:
+                                  Integer: 0
+            - Let:
+                identifier: o
+                expression:
+                  IfThenElse:
+                    condition:
+                      InputAccess:
+                        identifier: res
+                    then_branch:
+                      statements:
+                        - ExpressionLast:
+                            expression:
+                              Literal:
+                                literal:
+                                  Integer: 0
+                    else_branch:
+                      statements:
+                        - ExpressionLast:
+                            expression:
+                              FunctionCall:
+                                function:
+                                  Identifier:
+                                    identifier: " + "
+                                arguments:
+                                  - FunctionCall:
+                                      function:
+                                        Identifier:
+                                          identifier: (_)
+                                      arguments:
+                                        - MemoryAccess:
+                                            identifier: mem_o
+                                  - Identifier:
+                                      identifier: inc
+          state_elements_step:
+            - identifier: mem_o
+              expression:
+                Identifier:
+                  identifier: o
+          output_expression:
+            Identifier:
+              identifier: o
+          contract:
+            requires: []
+            ensures: []
+            invariant: []
+        init:
+          node_name: counter_o
+          state_elements_init:
+            - BufferInit:
+                identifier: mem_o
+                initial_expression:
+                  Literal:
+                    literal:
+                      Integer: 0
+          invariant_initialisation: []
+  - NodeFile:
+      name: blinking_status
+      imports:
+        - NodeFile: counter_o
+        - Function: xor
+      input:
+        node_name: blinking_status
+        elements:
+          - identifier: tick_number
+            type: Integer
+        generics: []
+      state:
+        node_name: blinking_status
+        elements:
+          - Buffer:
+              identifier: mem_res
+              type: Boolean
+          - Buffer:
+              identifier: mem_on_off
+              type: Boolean
+          - CalledNode:
+              identifier: counter_o
+              node_name: counter_o
+        step:
+          node_name: blinking_status
+          generics: []
+          output_type: Integer
+          body:
+            - Let:
+                identifier: x
+                expression:
+                  Literal:
+                    literal:
+                      Boolean: true
+            - Let:
+                identifier: res
+                expression:
+                  MemoryAccess:
+                    identifier: mem_res
+            - Let:
+                identifier: counter
+                expression:
+                  NodeCall:
+                    node_identifier: counter_o
+                    input_name: CounterOInput
+                    input_fields:
+                      - - res
+                        - Identifier:
+                            identifier: res
+                      - - tick
+                        - Identifier:
+                            identifier: x
+            - Let:
+                identifier: on_off
+                expression:
+                  FunctionCall:
+                    function:
+                      Identifier:
+                        identifier: xor
+                    arguments:
+                      - Identifier:
+                          identifier: res
+                      - MemoryAccess:
+                          identifier: mem_on_off
+            - Let:
+                identifier: status
+                expression:
+                  IfThenElse:
+                    condition:
+                      Identifier:
+                        identifier: on_off
+                    then_branch:
+                      statements:
+                        - ExpressionLast:
+                            expression:
+                              FunctionCall:
+                                function:
+                                  Identifier:
+                                    identifier: " + "
+                                arguments:
+                                  - Identifier:
+                                      identifier: counter
+                                  - Literal:
+                                      literal:
+                                        Integer: 1
+                    else_branch:
+                      statements:
+                        - ExpressionLast:
+                            expression:
+                              Literal:
+                                literal:
+                                  Integer: 0
+          state_elements_step:
+            - identifier: mem_res
+              expression:
+                FunctionCall:
+                  function:
+                    Identifier:
+                      identifier: (_)
+                  arguments:
+                    - FunctionCall:
+                        function:
+                          Identifier:
+                            identifier: " == "
+                        arguments:
+                          - FunctionCall:
+                              function:
+                                Identifier:
+                                  identifier: " + "
+                              arguments:
+                                - Identifier:
+                                    identifier: counter
+                                - Literal:
+                                    literal:
+                                      Integer: 1
+                          - InputAccess:
+                              identifier: tick_number
+            - identifier: mem_on_off
+              expression:
+                Identifier:
+                  identifier: on_off
+          output_expression:
+            Identifier:
+              identifier: status
+          contract:
+            requires: []
+            ensures: []
+            invariant: []
+        init:
+          node_name: blinking_status
+          state_elements_init:
+            - BufferInit:
+                identifier: mem_res
+                initial_expression:
+                  Literal:
+                    literal:
+                      Boolean: true
+            - BufferInit:
+                identifier: mem_on_off
+                initial_expression:
+                  Literal:
+                    literal:
+                      Boolean: true
+            - CalledNodeInit:
+                identifier: counter_o
+                node_name: counter_o
+          invariant_initialisation: []
