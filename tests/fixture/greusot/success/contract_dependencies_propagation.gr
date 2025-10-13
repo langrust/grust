@@ -1,0 +1,11 @@
+node transitive(i: int, j: int)
+    requires { i < j }
+    requires { j < 1000 }
+    ensures  { o < 1000 }
+{
+	out o: int = i;
+}
+
+node using(i: int, j: int) {
+	out o: int = transitive(i, j).o;
+}

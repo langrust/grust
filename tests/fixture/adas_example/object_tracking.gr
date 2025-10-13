@@ -1,0 +1,3 @@
+component object_tracking(fused_information: [int; 10]) {
+    out object_motion: [int; 10] = fused_information.sort(|a: int, b: int| a - b );
+}

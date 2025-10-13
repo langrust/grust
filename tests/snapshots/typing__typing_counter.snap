@@ -1,0 +1,340 @@
+---
+source: tests/typing.rs
+expression: file
+---
+typedefs: []
+functions: []
+nodes:
+  - id: 21
+    unscheduled_equations:
+      19:
+        id: 19
+        expression:
+          kind:
+            Expression:
+              expression:
+                Application:
+                  function_expression:
+                    kind:
+                      Expression:
+                        expression:
+                          Identifier:
+                            id: 15
+                    typing:
+                      Abstract:
+                        - - Boolean
+                          - Integer
+                          - Integer
+                        - Integer
+                    location: ~
+                    dependencies: ~
+                  inputs:
+                    - kind:
+                        Expression:
+                          expression:
+                            Identifier:
+                              id: 17
+                      typing: Boolean
+                      location: ~
+                      dependencies: ~
+                    - kind:
+                        Expression:
+                          expression:
+                            Constant:
+                              constant:
+                                Integer: 0
+                      typing: Integer
+                      location: ~
+                      dependencies: ~
+                    - kind:
+                        Expression:
+                          expression:
+                            Application:
+                              function_expression:
+                                kind:
+                                  Expression:
+                                    expression:
+                                      Identifier:
+                                        id: 5
+                                typing:
+                                  Abstract:
+                                    - - Integer
+                                      - Integer
+                                    - Integer
+                                location: ~
+                                dependencies: ~
+                              inputs:
+                                - kind:
+                                    Expression:
+                                      expression:
+                                        Application:
+                                          function_expression:
+                                            kind:
+                                              Expression:
+                                                expression:
+                                                  Identifier:
+                                                    id: 2
+                                            typing:
+                                              Abstract:
+                                                - - Integer
+                                                - Integer
+                                            location: ~
+                                            dependencies: ~
+                                          inputs:
+                                            - kind:
+                                                FollowedBy:
+                                                  constant:
+                                                    kind:
+                                                      Expression:
+                                                        expression:
+                                                          Constant:
+                                                            constant:
+                                                              Integer: 0
+                                                    typing: Integer
+                                                    location: ~
+                                                    dependencies: ~
+                                                  expression:
+                                                    kind:
+                                                      Expression:
+                                                        expression:
+                                                          Identifier:
+                                                            id: 19
+                                                    typing: Integer
+                                                    location: ~
+                                                    dependencies: ~
+                                              typing: Integer
+                                              location: ~
+                                              dependencies: ~
+                                  typing: Integer
+                                  location: ~
+                                  dependencies: ~
+                                - kind:
+                                    Expression:
+                                      expression:
+                                        Identifier:
+                                          id: 20
+                                  typing: Integer
+                                  location: ~
+                                  dependencies: ~
+                      typing: Integer
+                      location: ~
+                      dependencies: ~
+          typing: Integer
+          location: ~
+          dependencies: ~
+        location: ~
+      20:
+        id: 20
+        expression:
+          kind:
+            Expression:
+              expression:
+                Application:
+                  function_expression:
+                    kind:
+                      Expression:
+                        expression:
+                          Identifier:
+                            id: 15
+                    typing:
+                      Abstract:
+                        - - Boolean
+                          - Integer
+                          - Integer
+                        - Integer
+                    location: ~
+                    dependencies: ~
+                  inputs:
+                    - kind:
+                        Expression:
+                          expression:
+                            Identifier:
+                              id: 18
+                      typing: Boolean
+                      location: ~
+                      dependencies: ~
+                    - kind:
+                        Expression:
+                          expression:
+                            Constant:
+                              constant:
+                                Integer: 1
+                      typing: Integer
+                      location: ~
+                      dependencies: ~
+                    - kind:
+                        Expression:
+                          expression:
+                            Constant:
+                              constant:
+                                Integer: 0
+                      typing: Integer
+                      location: ~
+                      dependencies: ~
+          typing: Integer
+          location: ~
+          dependencies: ~
+        location: ~
+    unitary_nodes: {}
+    contract:
+      requires: []
+      ensures: []
+      invariant: []
+    location: ~
+    graph: {}
+component:
+  id: 24
+  unscheduled_equations:
+    22:
+      id: 22
+      expression:
+        kind:
+          NodeApplication:
+            node_id: 21
+            inputs:
+              - - 17
+                - kind:
+                    FollowedBy:
+                      constant:
+                        kind:
+                          Expression:
+                            expression:
+                              Constant:
+                                constant:
+                                  Boolean: false
+                        typing: Boolean
+                        location: ~
+                        dependencies: ~
+                      expression:
+                        kind:
+                          Expression:
+                            expression:
+                              Application:
+                                function_expression:
+                                  kind:
+                                    Expression:
+                                      expression:
+                                        Identifier:
+                                          id: 2
+                                  typing:
+                                    Abstract:
+                                      - - Boolean
+                                      - Boolean
+                                  location: ~
+                                  dependencies: ~
+                                inputs:
+                                  - kind:
+                                      Expression:
+                                        expression:
+                                          Application:
+                                            function_expression:
+                                              kind:
+                                                Expression:
+                                                  expression:
+                                                    Identifier:
+                                                      id: 13
+                                              typing:
+                                                Abstract:
+                                                  - - Integer
+                                                    - Integer
+                                                  - Boolean
+                                              location: ~
+                                              dependencies: ~
+                                            inputs:
+                                              - kind:
+                                                  Expression:
+                                                    expression:
+                                                      Identifier:
+                                                        id: 22
+                                                typing: Integer
+                                                location: ~
+                                                dependencies: ~
+                                              - kind:
+                                                  Expression:
+                                                    expression:
+                                                      Constant:
+                                                        constant:
+                                                          Integer: 35
+                                                typing: Integer
+                                                location: ~
+                                                dependencies: ~
+                                    typing: Boolean
+                                    location: ~
+                                    dependencies: ~
+                        typing: Boolean
+                        location: ~
+                        dependencies: ~
+                  typing: Boolean
+                  location: ~
+                  dependencies: ~
+              - - 18
+                - kind:
+                    Expression:
+                      expression:
+                        Identifier:
+                          id: 23
+                  typing: Boolean
+                  location: ~
+                  dependencies: ~
+            output_id: 19
+        typing: Integer
+        location: ~
+        dependencies: ~
+      location: ~
+    23:
+      id: 23
+      expression:
+        kind:
+          FollowedBy:
+            constant:
+              kind:
+                Expression:
+                  expression:
+                    Constant:
+                      constant:
+                        Boolean: true
+              typing: Boolean
+              location: ~
+              dependencies: ~
+            expression:
+              kind:
+                Expression:
+                  expression:
+                    Application:
+                      function_expression:
+                        kind:
+                          Expression:
+                            expression:
+                              Identifier:
+                                id: 1
+                        typing:
+                          Abstract:
+                            - - Boolean
+                            - Boolean
+                        location: ~
+                        dependencies: ~
+                      inputs:
+                        - kind:
+                            Expression:
+                              expression:
+                                Identifier:
+                                  id: 23
+                          typing: Boolean
+                          location: ~
+                          dependencies: ~
+              typing: Boolean
+              location: ~
+              dependencies: ~
+        typing: Boolean
+        location: ~
+        dependencies: ~
+      location: ~
+  unitary_nodes: {}
+  contract:
+    requires: []
+    ensures: []
+    invariant: []
+  location: ~
+  graph: {}
+interface: ~
+location: ~

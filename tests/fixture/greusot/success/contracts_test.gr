@@ -1,0 +1,25 @@
+node over_speed_alert(speed: int, dt: int)
+    requires { 0 <= speed }
+    requires { speed <= 200 }
+    requires { 0 < dt }
+    requires { dt <= 10 }
+    invariant { 0 <= t_level }
+    invariant { t_level <= 1009 }
+    ensures { 0 <= alert }
+    ensures { alert <= 2 }
+{
+	out alert: int = if (80 < speed && speed < 120) && (t_level >= 1000)
+		then 1
+		else (
+            if (120 <= speed) && (t_level >= 1000)
+			then 2
+			else 0
+        );
+			
+	t_level: int = 0 fby if change then dt else (
+        if t_level < 1000 then t_level + dt else t_level
+    );
+	
+	prev_alert: int = 0 fby alert;
+	change: bool = prev_alert != alert;
+}
