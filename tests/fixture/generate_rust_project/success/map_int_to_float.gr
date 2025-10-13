@@ -1,3 +1,0 @@
-node map(x: int, f: int -> float) {
-    out y: float = f(x);
-}

@@ -1,0 +1,8 @@
+[package]
+name = "grust_std"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+rayon = { workspace = true }
+grust_core = { workspace = true }

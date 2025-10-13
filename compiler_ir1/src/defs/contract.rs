@@ -1,0 +1,363 @@
+//! [Contract] module.
+
+//! [Term] module.
+
+prelude! {
+    graph::*,
+}
+
+#[derive(Debug, PartialEq, Clone)]
+/// A contract term kind.
+pub enum Kind {
+    /// Constant.
+    Constant {
+        /// The constant
+        constant: Constant,
+    },
+    /// Parenthesized term: `(x+y)`.
+    Paren {
+        /// The parenthesized term.
+        term: Box<Term>,
+    },
+    /// Identifier.
+    Identifier {
+        /// Ident's identifier in Symbol Table.
+        id: usize,
+    },
+    /// Last term: `last <term>`.
+    Last {
+        /// Ident's memory in Symbol Table.
+        init_id: usize,
+        /// Ident's identifier in Symbol Table.
+        ident_id: usize,
+    },
+    /// Enumeration term.
+    Enumeration {
+        /// The enumeration id.
+        enum_id: usize,
+        /// The element id.
+        element_id: usize,
+    },
+    /// Unary operator application.
+    Unary {
+        /// The operator
+        op: UOp,
+        /// The term
+        term: Box<Term>,
+    },
+    /// Binary operator application.
+    Binary {
+        /// The operator
+        op: BOp,
+        /// Left term
+        left: Box<Term>,
+        /// Right term
+        right: Box<Term>,
+    },
+    /// Forall term: `forall x, P(x)`.
+    ForAll { id: usize, term: Box<Term> },
+    /// Implication term: `P => Q`.
+    Implication { left: Box<Term>, right: Box<Term> },
+    /// Present event pattern.
+    PresentEvent {
+        /// The event identifier
+        event_id: usize,
+        /// The event pattern
+        pattern: usize,
+    },
+    /// Term application.
+    Application {
+        /// The term applied.
+        fun_id: usize,
+        /// The inputs to the term.
+        inputs: Vec<Term>,
+    },
+    /// Component call.
+    ComponentCall {
+        /// Identifier to the memory location of the component.
+        memory_id: Option<usize>,
+        /// The called component identifier.
+        comp_id: usize,
+        /// The inputs to the term.
+        inputs: Vec<(usize, Term)>,
+    },
+}
+
+mk_new! { impl Kind =>
+    Constant: constant { constant: Constant }
+    Paren: paren { term: Term = term.into() }
+    Identifier: ident { id: usize }
+    Last: last { init_id: usize, ident_id: usize }
+    Enumeration: enumeration {
+        enum_id: usize,
+        element_id: usize,
+    }
+    Unary: unary {
+        op: UOp,
+        term: Term = term.into(),
+    }
+    Binary: binary {
+        op: BOp,
+        left: Term = left.into(),
+        right: Term = right.into(),
+    }
+    ForAll: forall {
+        id: usize,
+        term: Term = term.into(),
+    }
+    Implication: implication {
+        left: Term = left.into(),
+        right: Term = right.into(),
+    }
+    PresentEvent: present {
+        event_id: usize,
+        pattern: usize,
+    }
+    Application: app {
+        fun_id: usize,
+        inputs: impl Into<Vec<Term>> = inputs.into(),
+    }
+    ComponentCall: call {
+        memory_id = None,
+        comp_id: usize,
+        inputs: Vec<(usize, Term)>,
+    }
+}
+
+#[derive(Debug, PartialEq, Clone)]
+/// A contract term.
+pub struct Term {
+    /// The kind of the term
+    pub kind: Kind,
+    /// The type of the term
+    pub typing: Option<Typ>,
+    /// The location in source code
+    pub loc: Loc,
+}
+
+mk_new! { impl Term =>
+    new {
+        kind: Kind,
+        typing: Option<Typ>,
+        loc: Loc,
+    }
+}
+
+impl Term {
+    /// Compute dependencies of a term.
+    pub fn compute_dependencies(&self, ctx: &Ctx) -> Vec<usize> {
+        match &self.kind {
+            Kind::Unary { term, .. } | Kind::Paren { term } => term.compute_dependencies(ctx),
+            Kind::Binary { left, right, .. } | Kind::Implication { left, right, .. } => {
+                let mut dependencies = right.compute_dependencies(ctx);
+                dependencies.extend(left.compute_dependencies(ctx));
+                dependencies
+            }
+            Kind::Constant { .. } | Kind::Enumeration { .. } => {
+                vec![]
+            }
+            Kind::Identifier { id } | Kind::PresentEvent { pattern: id, .. } => {
+                if ctx.is_function(*id) {
+                    vec![]
+                } else {
+                    vec![*id]
+                }
+            }
+            Kind::ForAll { id, term, .. } => term
+                .compute_dependencies(ctx)
+                .into_iter()
+                .filter(|ident| id != ident)
+                .collect(),
+            Kind::Last { .. } => vec![],
+            Kind::Application { inputs, .. } => inputs
+                .iter()
+                .flat_map(|term| term.compute_dependencies(ctx))
+                .collect(),
+            Kind::ComponentCall { inputs, .. } => inputs
+                .iter()
+                .flat_map(|(_, term)| term.compute_dependencies(ctx))
+                .collect(),
+        }
+    }
+
+    /// Add dependencies of a term to the graph.
+    pub fn add_term_dependencies(&self, comp_graph: &mut DiGraphMap<usize, Label>, ctx: &Ctx) {
+        let dependencies = self.compute_dependencies(ctx);
+        // idents used in the term depend on each other
+        dependencies.iter().for_each(|id1| {
+            dependencies.iter().for_each(|id2| {
+                if id1 != id2 {
+                    add_edge(comp_graph, *id1, *id2, Label::Contract);
+                    add_edge(comp_graph, *id2, *id1, Label::Contract);
+                }
+            })
+        })
+    }
+
+    /// Increment memory with ghost component applications.
+    pub fn memorize(
+        &mut self,
+        identifier_creator: &mut IdentifierCreator,
+        memory: &mut Memory,
+        ctx: &mut Ctx,
+    ) {
+        match &mut self.kind {
+            contract::Kind::ComponentCall {
+                comp_id,
+                memory_id: comp_memory_id,
+                ..
+            } => {
+                debug_assert!(comp_memory_id.is_none());
+                // create fresh identifier for the new memory buffer
+                let comp_name = ctx.get_name(*comp_id);
+                let memory_name =
+                    identifier_creator.new_identifier(comp_name.loc(), comp_name.to_string());
+                let memory_id = ctx.insert_fresh_ident(memory_name, Scope::Local, None);
+                memory.add_ghost_comp(memory_id, *comp_id);
+                // put the 'memory_id' of the called component
+                *comp_memory_id = Some(memory_id);
+            }
+            Kind::Constant { .. }
+            | Kind::Identifier { .. }
+            | Kind::Last { .. }
+            | Kind::Enumeration { .. }
+            | Kind::PresentEvent { .. } => (),
+            Kind::Unary { term, .. } | Kind::Paren { term } | Kind::ForAll { term, .. } => {
+                term.memorize(identifier_creator, memory, ctx)
+            }
+            Kind::Binary { left, right, .. } | Kind::Implication { left, right, .. } => {
+                left.memorize(identifier_creator, memory, ctx);
+                right.memorize(identifier_creator, memory, ctx);
+            }
+            Kind::Application { inputs, .. } => {
+                inputs
+                    .iter_mut()
+                    .for_each(|term| term.memorize(identifier_creator, memory, ctx));
+            }
+        }
+    }
+
+    /// Substitute an identifier with another one.
+    pub fn substitution(&mut self, old_id: usize, new_id: usize) {
+        match &mut self.kind {
+            Kind::Constant { .. } | Kind::Enumeration { .. } => (),
+            Kind::Identifier { ref mut id }
+            | Kind::PresentEvent {
+                pattern: ref mut id,
+                ..
+            } => {
+                if *id == old_id {
+                    *id = new_id;
+                }
+            }
+            Kind::Last {
+                ref mut init_id,
+                ref mut ident_id,
+            } => {
+                if *ident_id == old_id {
+                    *ident_id = new_id;
+                }
+                if *init_id == old_id {
+                    *init_id = new_id;
+                }
+            }
+            Kind::Unary { ref mut term, .. } | Kind::Paren { ref mut term } => {
+                term.substitution(old_id, new_id);
+            }
+            Kind::Binary {
+                ref mut left,
+                ref mut right,
+                ..
+            }
+            | Kind::Implication {
+                ref mut left,
+                ref mut right,
+                ..
+            } => {
+                left.substitution(old_id, new_id);
+                right.substitution(old_id, new_id);
+            }
+            Kind::ForAll { id, term, .. } => {
+                if old_id != *id {
+                    term.substitution(old_id, new_id)
+                }
+                // if 'id to replace' is equal to 'id of the forall' then nothing to do
+            }
+            Kind::Application { fun_id, inputs } => {
+                if *fun_id == old_id {
+                    *fun_id = new_id;
+                }
+                inputs
+                    .iter_mut()
+                    .for_each(|term| term.substitution(old_id, new_id));
+            }
+            Kind::ComponentCall {
+                memory_id, inputs, ..
+            } => {
+                if *memory_id == Some(old_id) {
+                    *memory_id = Some(new_id);
+                }
+                inputs
+                    .iter_mut()
+                    .for_each(|(_, term)| term.substitution(old_id, new_id));
+            }
+        }
+    }
+}
+
+#[derive(Debug, Default, PartialEq, Clone)]
+/// Contract to prove using Creusot.
+pub struct Contract {
+    /// Requirements clauses to suppose
+    pub requires: Vec<Term>,
+    /// Ensures clauses to prove
+    pub ensures: Vec<Term>,
+    /// Invariant clauses to prove
+    pub invariant: Vec<Term>,
+}
+
+impl Contract {
+    /// Substitutes an identifier from another.
+    pub fn substitution(&mut self, old_id: usize, new_id: usize) {
+        self.requires
+            .iter_mut()
+            .for_each(|term| term.substitution(old_id, new_id));
+        self.ensures
+            .iter_mut()
+            .for_each(|term| term.substitution(old_id, new_id));
+        self.invariant
+            .iter_mut()
+            .for_each(|term| term.substitution(old_id, new_id));
+    }
+
+    /// Add dependencies of a contract to the graph.
+    pub fn add_dependencies(&self, comp_graph: &mut DiGraphMap<usize, Label>, ctx: &Ctx) {
+        self.requires
+            .iter()
+            .for_each(|term| term.add_term_dependencies(comp_graph, ctx));
+        self.ensures
+            .iter()
+            .for_each(|term| term.add_term_dependencies(comp_graph, ctx));
+        self.invariant
+            .iter()
+            .for_each(|term| term.add_term_dependencies(comp_graph, ctx));
+    }
+
+    /// Increment memory with ghost component applications.
+    pub fn memorize(
+        &mut self,
+        identifier_creator: &mut IdentifierCreator,
+        memory: &mut Memory,
+        ctx: &mut Ctx,
+    ) {
+        self.requires
+            .iter_mut()
+            .for_each(|term| term.memorize(identifier_creator, memory, ctx));
+        self.ensures
+            .iter_mut()
+            .for_each(|term| term.memorize(identifier_creator, memory, ctx));
+        self.invariant
+            .iter_mut()
+            .for_each(|term| term.memorize(identifier_creator, memory, ctx));
+    }
+}

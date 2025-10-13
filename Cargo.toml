@@ -1,30 +1,81 @@
-[package]
-name = "grustine"
-version = "0.1.0"
+[workspace]
+resolver = "2"
+exclude = ["creusot"]
+members = [
+    "grust",
+    "examples/*",
+    "compiler_common",
+    "compiler_ir0",
+    "compiler_ir1",
+    "compiler_ir2",
+    "compiler_top",
+    "json",
+    "grust_proc",
+    "grust_std",
+    "grust_core",
+]
+
+[workspace.package]
+# license-file = "LICENSE"
+version = "1.4.0"
 edition = "2021"
-authors = ["Émilie THOMÉ <emilie.e.thome@renault.com>"]
+# publish = false
+
+# Alignment to google requirements
+[workspace.lints.rust]
+unknown_lints = "allow"
+deprecated = "allow"
+# missing-docs = "deny"
+unsafe_op_in_unsafe_fn = "deny"
+warnings = "deny"
+
+[workspace.lints.clippy]
+# android denied rules
+undocumented_unsafe_blocks = "deny"
+
+# better cargo:
+multiple_crate_versions = "warn"
+negative_feature_names = "warn"
+redundant_feature_names = "warn"
+wildcard_dependencies = "warn"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
-[build-dependencies]
-lalrpop = "0.19.10"
-
-[dependencies]
-lalrpop-util = {version = "0.19.10", features = ["lexer"]}
-codespan-reporting = "0.11.1"
+[workspace.dependencies]
+rustc-hash = "^1.1"
+quote = "^1"
+syn = { version = "^2", features = ["full", "extra-traits"] }
+proc-macro2 = "^1"
+lazy_static = "^1.4"
+serde = { version = "^1.0", features = ["derive"] }
 strum = { version = "0.21", features = ["derive"] }
-once_cell = "1.18.0"
-syn = { version = "2.0.33", features = ["extra-traits"] }
-prettyplease = "0.2.15"
-serde = { version = "1.0", features = ["derive"] }
-itertools = "0.11.0"
-proc-macro2 = "1.0.78"
-quote = "1.0.35"
 petgraph = { version = "0.6.4", features = ["serde-1"] }
+once_cell = "^1.19"
+itertools = "^0.12"
+rayon = "^1.10"
+futures = "^0.3"
+pin-project = "1.1.5"
+rand = "0.8.5"
+tokio = { version = "1.36.0", features = ["full"] }
+serde_json = "1.0.82"
+rustversion = "1.0"
+tracing = { version = "0.1.41", features = ["attributes"] }
 
-[dev-dependencies]
-insta = { version = "1.34.0", features = ["yaml"] }
+compiler_common = { path = "./compiler_common" }
+compiler_ir0 = { path = "./compiler_ir0" }
+compiler_ir1 = { path = "./compiler_ir1" }
+compiler_ir2 = { path = "./compiler_ir2" }
+compiler_top = { path = "./compiler_top" }
 
-[profile.dev.package]
-insta.opt-level = 3
-similar.opt-level = 3
+grust = { path = "./grust" }
+grust_proc = { path = "./grust_proc" }
+grust_std = { path = "./grust_std" }
+grust_core = { path = "./grust_core" }
+
+json = { path = "./json" }
+creusot-contracts = { path = "./creusot/creusot-contracts" }
+
+[profile.release]
+panic = 'abort'
+
+[profile.dev]
+panic = 'abort'

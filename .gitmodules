@@ -1,0 +1,3 @@
+[submodule "creusot"]
+	path = creusot
+	url = https://github.com/creusot-rs/creusot

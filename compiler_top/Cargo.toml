@@ -1,0 +1,18 @@
+[package]
+name = "compiler_top"
+version.workspace = true
+edition.workspace = true
+
+[features]
+diagnostics = [
+    "compiler_common/diagnostics",
+    "compiler_ir0/diagnostics",
+    "compiler_ir1/diagnostics",
+    "compiler_ir2/diagnostics",
+]
+
+[dependencies]
+compiler_common = { workspace = true }
+compiler_ir0 = { workspace = true }
+compiler_ir1 = { workspace = true }
+compiler_ir2 = { workspace = true }

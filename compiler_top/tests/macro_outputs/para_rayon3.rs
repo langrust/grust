@@ -1,0 +1,133 @@
+pub struct TestRayon3AuxInput {
+    pub i: i64,
+}
+pub struct TestRayon3AuxOutput {
+    pub next_o: i64,
+}
+pub struct TestRayon3AuxState {
+    last_i: i64,
+}
+impl grust::core::Component for TestRayon3AuxState {
+    type Input = TestRayon3AuxInput;
+    type Output = TestRayon3AuxOutput;
+    fn init() -> TestRayon3AuxState {
+        TestRayon3AuxState { last_i: 0i64 }
+    }
+    fn step(&mut self, input: TestRayon3AuxInput) -> TestRayon3AuxOutput {
+        let ((i3, i1, i2), ()) = {
+            let (i3, i1, i2) = ({ 7i64 * input.i }, { (input.i - 54i64) * 2i64 }, {
+                (input.i + 54i64) * 2i64
+            });
+            ((i3, i1, i2), ())
+        };
+        let ((i12, i23), ()) = {
+            let (i12, i23) = ({ i1 + i2 }, { i2 + i3 });
+            ((i12, i23), ())
+        };
+        let i123 = (i12 + (2i64 * i3)) + i23;
+        let next_o = match input.i {
+            0 => {
+                let next_o = 1i64 + self.last_i;
+                next_o
+            }
+            7 => {
+                let next_o = i123;
+                next_o
+            }
+            _ => {
+                let next_o = i12;
+                next_o
+            }
+        };
+        self.last_i = input.i;
+        TestRayon3AuxOutput { next_o }
+    }
+}
+pub struct TestRayon3Input {
+    pub i: i64,
+}
+pub struct TestRayon3Output {
+    pub next_o: i64,
+}
+pub struct TestRayon3State {
+    last_i: i64,
+    test_rayon3_aux: TestRayon3AuxState,
+    test_rayon3_aux_1: TestRayon3AuxState,
+    test_rayon3_aux_2: TestRayon3AuxState,
+}
+impl grust::core::Component for TestRayon3State {
+    type Input = TestRayon3Input;
+    type Output = TestRayon3Output;
+    fn init() -> TestRayon3State {
+        TestRayon3State {
+            last_i: 0i64,
+            test_rayon3_aux: <TestRayon3AuxState as grust::core::Component>::init(),
+            test_rayon3_aux_1: <TestRayon3AuxState as grust::core::Component>::init(),
+            test_rayon3_aux_2: <TestRayon3AuxState as grust::core::Component>::init(),
+        }
+    }
+    fn step(&mut self, input: TestRayon3Input) -> TestRayon3Output {
+        let ((i1_1, i1_2, i1_3), ()) = {
+            let (i1_1, i1_2, i1_3) = (
+                { (input.i - 54i64) * 2i64 },
+                { (input.i + 54i64) * 2i64 },
+                {
+                    {
+                        let TestRayon3AuxOutput { next_o } =
+                            <TestRayon3AuxState as grust::core::Component>::step(
+                                &mut self.test_rayon3_aux,
+                                TestRayon3AuxInput { i: input.i },
+                            );
+                        (next_o)
+                    }
+                },
+            );
+            ((i1_1, i1_2, i1_3), ())
+        };
+        let (((x, i2_1), (x_1, i2_2)), ()) = {
+            let ((x, i2_1), (x_1, i2_2)) = (
+                {
+                    let x = (i1_1 + i1_2) - i1_3;
+                    let i2_1 = {
+                        let TestRayon3AuxOutput { next_o } =
+                            <TestRayon3AuxState as grust::core::Component>::step(
+                                &mut self.test_rayon3_aux_1,
+                                TestRayon3AuxInput { i: x },
+                            );
+                        (next_o)
+                    };
+                    (x, i2_1)
+                },
+                {
+                    let x_1 = (i1_2 - i1_2) + i1_3;
+                    let i2_2 = {
+                        let TestRayon3AuxOutput { next_o } =
+                            <TestRayon3AuxState as grust::core::Component>::step(
+                                &mut self.test_rayon3_aux_2,
+                                TestRayon3AuxInput { i: x_1 },
+                            );
+                        (next_o)
+                    };
+                    (x_1, i2_2)
+                },
+            );
+            (((x, i2_1), (x_1, i2_2)), ())
+        };
+        let next_o = match input.i {
+            0 => {
+                let next_o = 1i64 + self.last_i;
+                next_o
+            }
+            7 => {
+                let next_o = i2_1;
+                next_o
+            }
+            _ => {
+                let next_o = i2_2;
+                next_o
+            }
+        };
+        self.last_i = input.i;
+        TestRayon3Output { next_o }
+    }
+}
