@@ -1,6 +1,0 @@
-function map(x: int, f: int -> float) -> float {
-    return f(x);
-}
-node main(x: int, f: int -> float) {
-    out y: float = map(x, f);
-}

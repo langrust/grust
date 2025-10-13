@@ -1,0 +1,16 @@
+[package]
+name = "grust_core"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+pin-project = { workspace = true }
+futures = { workspace = true }
+tokio = { workspace = true }
+tracing = { workspace = true }
+
+[dev-dependencies]
+rand = { workspace = true }
+
+[lints]
+workspace = true

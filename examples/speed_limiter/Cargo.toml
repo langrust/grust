@@ -1,0 +1,11 @@
+[package]
+name = "speed_limiter"
+version.workspace = true
+edition.workspace = true
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+grust = { workspace = true }
+json = { workspace = true }
+serde = { workspace = true }

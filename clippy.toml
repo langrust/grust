@@ -1,0 +1,2 @@
+# Allow windows crates as duplicate crates as they will not be used on the platform
+allowed-duplicate-crates = ["windows-sys", "windows-targets", "windows_aarch64_gnullvm", "windows_aarch64_msvc", "windows_i686_gnu", "windows_x86_64_msvc", "windows_x86_64_gnullvm", "windows_x86_64_gnu", "windows_i686_msvc", "syn", "indexmap", "hashbrown", "bitflags", "thiserror", "thiserror-impl"]

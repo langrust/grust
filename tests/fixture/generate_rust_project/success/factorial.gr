@@ -1,9 +1,0 @@
-function factorial(n: int) -> int {
-    let res: int = if n <= 1 then 1 else n * factorial(n-1);
-    return res;
-}
-
-component main() {
-    out f: int = factorial(n);
-    n: int = 0 fby n + 1;
-}

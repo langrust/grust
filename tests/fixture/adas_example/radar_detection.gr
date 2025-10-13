@@ -1,8 +1,0 @@
-function factorial(n: int) -> int {
-    let res: int = if n <= 1 then 1 else n * factorial(n-1);
-    return res;
-}
-
-component radar_detection(distances: [int; 10]) {
-    out list_of_detections: [int; 10] = distances.map(factorial);
-}
