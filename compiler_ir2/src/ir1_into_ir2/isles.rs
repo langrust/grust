@@ -173,7 +173,7 @@ impl<'a> IsleBuilder<'a> {
                             triggered_by(input);
                         }
                     } else {
-                        todo!("non-ident component input")
+                        todoo!("non-ident component input")
                     }
                 }
             }

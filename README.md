@@ -28,7 +28,8 @@ Retrieve the creusot dependency:
 Use cargo to build everything:
 
 ```text
-# To run with macro diagnostics:
+# To run with macro diagnostics and Creusot:
+# Need nightly or provided rust-toolchain
 > cargo build
 [...]
 

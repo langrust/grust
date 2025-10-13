@@ -25,9 +25,8 @@ impl Parse for Item {
                 }
             };
         }
-        if ComponentImport::peek(input) {
-            no_attributes!();
-            Ok(Item::ComponentImport(input.parse()?))
+        if ConstDecl::peek(input) {
+            Ok(Item::Const(input.parse()?))
         } else if Component::peek(input) {
             Ok(Item::Component(Component::parse_item(input, attrs)?))
         } else if Function::peek(input) {
@@ -3045,7 +3044,7 @@ mod parsing_tests {
                         Expr::test_ident("p"),
                         Expr::cst(Constant::Integer(syn::parse_quote! {0})),
                     )))),
-                    Expr::ident("p"),
+                    Expr::test_ident("p"),
                 )],
             ));
             assert_eq!(expression, control)

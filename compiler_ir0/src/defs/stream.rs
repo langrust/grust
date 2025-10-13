@@ -68,7 +68,7 @@ pub struct WhenExpr {
 }
 impl WhenExpr {
     pub fn loc(&self) -> Loc {
-        self.pattern.loc()
+        self.when_token.span.into()
     }
 }
 mk_new! { impl WhenExpr =>
