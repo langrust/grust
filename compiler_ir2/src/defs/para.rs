@@ -976,7 +976,7 @@ impl Stmts {
                     vars_expr.to_token_stream(),
                 )
             }
-            _ => todo!("unsupported parallelization kind `{}`", kind),
+            _ => todoo!("unsupported parallelization kind `{}`", kind),
         }
     }
 

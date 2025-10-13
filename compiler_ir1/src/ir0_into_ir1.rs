@@ -2070,7 +2070,7 @@ mod stmt_pattern_impl {
                 Self::Typed(typed) => {
                     init_idents.push(typed.ident.clone());
                 }
-                ir0::stmt::Pattern::Tuple(ir0::stmt::Tuple {
+                Self::Tuple(ir0::stmt::Tuple {
                     elements: pat_elems,
                     ..
                 }) => {

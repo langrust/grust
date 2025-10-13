@@ -22,7 +22,7 @@ prelude! {}
 
 pub fn raw_from_ast(ast: Ast, symbols: &mut Ctx, errors: &mut Vec<Error>) -> TRes<File> {
     let mut ctx = ctx::Simple::new(symbols, errors);
-    unwrap("IR0 to IR1", ast.into_ir1(&mut ctx), &ctx.errors)
+    ast.into_ir1(&mut ctx)
 }
 
 pub fn from_ast_timed(
