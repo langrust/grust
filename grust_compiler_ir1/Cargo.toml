@@ -1,0 +1,11 @@
+[package]
+name = "grust_compiler_ir1"
+version.workspace = true
+edition.workspace = true
+
+[features]
+diagnostics = []
+
+[dependencies]
+grust_compiler_common = { workspace = true }
+grust_compiler_ir0 = { workspace = true }

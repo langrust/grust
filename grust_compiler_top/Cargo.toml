@@ -1,0 +1,18 @@
+[package]
+name = "grust_compiler_top"
+version.workspace = true
+edition.workspace = true
+
+[features]
+diagnostics = [
+    "grust_compiler_common/diagnostics",
+    "grust_compiler_ir0/diagnostics",
+    "grust_compiler_ir1/diagnostics",
+    "grust_compiler_ir2/diagnostics",
+]
+
+[dependencies]
+grust_compiler_common = { workspace = true }
+grust_compiler_ir0 = { workspace = true }
+grust_compiler_ir1 = { workspace = true }
+grust_compiler_ir2 = { workspace = true }
