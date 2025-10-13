@@ -4,11 +4,11 @@ exclude = ["creusot"]
 members = [
     "grust",
     "examples/*",
-    "compiler_common",
-    "compiler_ir0",
-    "compiler_ir1",
-    "compiler_ir2",
-    "compiler_top",
+    "grust_compiler_common",
+    "grust_compiler_ir0",
+    "grust_compiler_ir1",
+    "grust_compiler_ir2",
+    "grust_compiler_top",
     "json",
     "grust_proc",
     "grust_std",
@@ -60,11 +60,11 @@ serde_json = "1.0.82"
 rustversion = "1.0"
 tracing = { version = "0.1.41", features = ["attributes"] }
 
-compiler_common = { path = "./compiler_common" }
-compiler_ir0 = { path = "./compiler_ir0" }
-compiler_ir1 = { path = "./compiler_ir1" }
-compiler_ir2 = { path = "./compiler_ir2" }
-compiler_top = { path = "./compiler_top" }
+grust_compiler_common = { path = "./grust_compiler_common" }
+grust_compiler_ir0 = { path = "./grust_compiler_ir0" }
+grust_compiler_ir1 = { path = "./grust_compiler_ir1" }
+grust_compiler_ir2 = { path = "./grust_compiler_ir2" }
+grust_compiler_top = { path = "./grust_compiler_top" }
 
 grust = { path = "./grust" }
 grust_proc = { path = "./grust_proc" }

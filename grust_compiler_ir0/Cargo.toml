@@ -1,15 +1,12 @@
 [package]
-name = "grust_proc"
+name = "grust_compiler_ir0"
 version.workspace = true
 edition.workspace = true
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [features]
-diagnostics = ["grust_compiler_top/diagnostics"]
-
-[lib]
-proc-macro = true
+diagnostics = []
 
 [dependencies]
-grust_compiler_top = { workspace = true }
+grust_compiler_common = { workspace = true }

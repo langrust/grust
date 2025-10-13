@@ -1,0 +1,17 @@
+[package]
+name = "grust_compiler_ir2"
+version.workspace = true
+edition.workspace = true
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[features]
+diagnostics = []
+
+[dependencies]
+grust_compiler_common = {workspace = true}
+grust_compiler_ir0 = {workspace = true}
+grust_compiler_ir1 = {workspace = true}
+
+[dev-dependencies]
+rayon = {workspace = true}
