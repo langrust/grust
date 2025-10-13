@@ -40,48 +40,7 @@ pub enum PatternKind {
     /// None pattern, matches when the optional does not have a value.
     None,
     /// The default pattern that matches anything.
-    Default {
-        /// Pattern location.
-        location: Location,
-    },
-}
-impl Display for Pattern {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match self {
-            Pattern::Identifier { name, location: _ } => write!(f, "{}", name),
-            Pattern::Constant {
-                constant,
-                location: _,
-            } => write!(f, "{}", constant),
-            Pattern::Structure {
-                name,
-                fields,
-                location: _,
-            } => {
-                write!(f, "{} {{ ", name)?;
-                for (field, pattern) in fields.iter() {
-                    write!(f, "{}: {},", field, pattern)?;
-                }
-                write!(f, " }}")
-            }
-            Pattern::Tuple {
-                elements,
-                location: _,
-            } => {
-                write!(f, "( ")?;
-                for pattern in elements.iter() {
-                    write!(f, "{},", pattern)?;
-                }
-                write!(f, " )")
-            }
-            Pattern::Some {
-                pattern,
-                location: _,
-            } => write!(f, "some({})", pattern),
-            Pattern::None { location: _ } => write!(f, "none"),
-            Pattern::Default { location: _ } => write!(f, "_"),
-        }
-    }
+    Default,
 }
 
 #[derive(Debug, PartialEq, Clone, serde::Serialize)]
