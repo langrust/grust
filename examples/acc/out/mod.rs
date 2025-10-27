@@ -5,15 +5,15 @@ enum Activation {
     Off,
 }
 fn safety_distance(sv_v: f64, fv_v: f64) -> f64 {
-    let sv_d_stop = (sv_v * 1.0f64) + ((sv_v * sv_v) / (2.0f64 * 5.886f64));
-    let fv_d_stop = (fv_v * fv_v) / (2.0f64 * 5.886f64);
+    let sv_d_stop = (sv_v * 1.0f64) + ((sv_v * sv_v) / (2.0f64 * (0.6f64 * 9.81f64)));
+    let fv_d_stop = (fv_v * fv_v) / (2.0f64 * (0.6f64 * 9.81f64));
     sv_d_stop - fv_d_stop
 }
 struct AccInput {
     c: bool,
     d: f64,
-    v: f64,
     s: f64,
+    v: f64,
 }
 struct AccOutput {
     b: f64,
@@ -39,6 +39,13 @@ impl grust::core::Component for AccState {
                 (d_safe, b, fv_v)
             }
         };
+        println!("c: {:?}", input.c);
+        println!("d: {:?}", input.d);
+        println!("s: {:?}", input.s);
+        println!("v: {:?}", input.v);
+        println!("b: {:?}", b);
+        println!("d_safe: {:?}", d_safe);
+        println!("fv_v: {:?}", fv_v);
         AccOutput { b }
     }
 }
@@ -52,7 +59,7 @@ struct ActivateOutput {
 struct ActivateState {
     last_active: bool,
     last_approach: bool,
-    last_d: f64,
+    last_r_mem: f64,
 }
 impl grust::core::Component for ActivateState {
     type Input = ActivateInput;
@@ -61,32 +68,84 @@ impl grust::core::Component for ActivateState {
         ActivateState {
             last_active: false,
             last_approach: false,
-            last_d: 0.0f64,
+            last_r_mem: 0.0f64,
         }
     }
     fn step(&mut self, input: ActivateInput) -> ActivateOutput {
-        let (active, d, approach) = match (input.act, input.r) {
+        let (active, r_mem, approach) = match (input.act, input.r) {
             (Some(act), _) => {
-                let (d, approach) = (self.last_d, self.last_approach);
+                let (r_mem, approach) = (self.last_r_mem, self.last_approach);
                 let active = act == Activation::On;
-                (active, d, approach)
+                (active, r_mem, approach)
             }
             (_, Some(r)) => {
                 let active = self.last_active;
-                let d = r;
-                let approach = d < self.last_d;
-                (active, d, approach)
+                let r_mem = r;
+                let approach = r < self.last_r_mem;
+                (active, r_mem, approach)
             }
             (_, _) => {
-                let (d, active, approach) = (self.last_d, self.last_active, self.last_approach);
-                (active, d, approach)
+                let (r_mem, active, approach) =
+                    (self.last_r_mem, self.last_active, self.last_approach);
+                (active, r_mem, approach)
             }
         };
         let c = active && approach;
         self.last_active = active;
         self.last_approach = approach;
-        self.last_d = d;
+        self.last_r_mem = r_mem;
+        println!("act: {:?}", input.act);
+        println!("r: {:?}", input.r);
+        println!("r_mem: {:?}", r_mem);
+        println!("active: {:?}", active);
+        println!("approach: {:?}", approach);
+        println!("c: {:?}", c);
         ActivateOutput { c }
+    }
+}
+struct DeriveOnInput {
+    x: f64,
+    t: f64,
+    e: Option<()>,
+}
+struct DeriveOnOutput {
+    v: f64,
+}
+struct DeriveOnState {
+    last_t_mem: f64,
+    last_v: f64,
+    last_x_mem: f64,
+}
+impl grust::core::Component for DeriveOnState {
+    type Input = DeriveOnInput;
+    type Output = DeriveOnOutput;
+    fn init() -> DeriveOnState {
+        DeriveOnState {
+            last_t_mem: 0.0f64,
+            last_v: 0.0f64,
+            last_x_mem: 0.0f64,
+        }
+    }
+    fn step(&mut self, input: DeriveOnInput) -> DeriveOnOutput {
+        let (x_mem, v, t_mem) = match (input.e) {
+            (Some(e)) => {
+                let v = (1000.0f64 * (input.x - self.last_x_mem)) / (input.t - self.last_t_mem);
+                let (x_mem, t_mem) = (input.x, input.t);
+                (x_mem, v, t_mem)
+            }
+            (_) => {
+                let (v, x_mem, t_mem) = (self.last_v, self.last_x_mem, self.last_t_mem);
+                (x_mem, v, t_mem)
+            }
+        };
+        self.last_t_mem = t_mem;
+        self.last_v = v;
+        self.last_x_mem = x_mem;
+        println!("t: {:?}", input.t);
+        println!("e: {:?}", input.e);
+        println!("v: {:?}", v);
+        println!("x_mem: {:?}", x_mem);
+        DeriveOnOutput { v }
     }
 }
 pub mod runtime {
@@ -94,6 +153,7 @@ pub mod runtime {
     use grust::futures::{sink::SinkExt, stream::StreamExt};
     #[derive(Debug)]
     pub enum RuntimeInput {
+        Derive((), std::time::Instant),
         RadarM(f64, std::time::Instant),
         AccActive(Activation, std::time::Instant),
         SpeedKmH(f64, std::time::Instant),
@@ -111,6 +171,7 @@ pub mod runtime {
     impl PartialEq for RuntimeInput {
         fn eq(&self, other: &Self) -> bool {
             match (self, other) {
+                (I::Derive(this, _), I::Derive(other, _)) => this.eq(other),
                 (I::RadarM(this, _), I::RadarM(other, _)) => this.eq(other),
                 (I::AccActive(this, _), I::AccActive(other, _)) => this.eq(other),
                 (I::SpeedKmH(this, _), I::SpeedKmH(other, _)) => this.eq(other),
@@ -122,6 +183,7 @@ pub mod runtime {
     impl RuntimeInput {
         pub fn get_instant(&self) -> std::time::Instant {
             match self {
+                I::Derive(_, _grust_reserved_instant) => *_grust_reserved_instant,
                 I::RadarM(_, _grust_reserved_instant) => *_grust_reserved_instant,
                 I::AccActive(_, _grust_reserved_instant) => *_grust_reserved_instant,
                 I::SpeedKmH(_, _grust_reserved_instant) => *_grust_reserved_instant,
@@ -225,6 +287,12 @@ pub mod runtime {
                             .handle_speed_km_h(_grust_reserved_instant, speed_km_h)
                             .await?;
                     }
+                    I::Derive(derive, _grust_reserved_instant) => {
+                        runtime
+                            .adaptive_cruise_control
+                            .handle_derive(_grust_reserved_instant, derive)
+                            .await?;
+                    }
                     I::AccActive(acc_active, _grust_reserved_instant) => {
                         runtime
                             .adaptive_cruise_control
@@ -293,26 +361,6 @@ pub mod runtime {
                 }
             }
             #[derive(Clone, Copy, PartialEq, Default, Debug)]
-            pub struct VelDelta(f64, bool);
-            impl VelDelta {
-                pub fn set(&mut self, vel_delta: f64) {
-                    self.1 = self.0 != vel_delta;
-                    self.0 = vel_delta;
-                }
-                pub fn get(&self) -> f64 {
-                    self.0
-                }
-                pub fn take(&mut self) -> f64 {
-                    std::mem::take(&mut self.0)
-                }
-                pub fn is_new(&self) -> bool {
-                    self.1
-                }
-                pub fn reset(&mut self) {
-                    self.1 = false;
-                }
-            }
-            #[derive(Clone, Copy, PartialEq, Default, Debug)]
             pub struct BrakesMS(f64, bool);
             impl BrakesMS {
                 pub fn set(&mut self, brakes_m_s: f64) {
@@ -338,6 +386,26 @@ pub mod runtime {
                 pub fn set(&mut self, radar_e_old: f64) {
                     self.1 = self.0 != radar_e_old;
                     self.0 = radar_e_old;
+                }
+                pub fn get(&self) -> f64 {
+                    self.0
+                }
+                pub fn take(&mut self) -> f64 {
+                    std::mem::take(&mut self.0)
+                }
+                pub fn is_new(&self) -> bool {
+                    self.1
+                }
+                pub fn reset(&mut self) {
+                    self.1 = false;
+                }
+            }
+            #[derive(Clone, Copy, PartialEq, Default, Debug)]
+            pub struct DeltaV(f64, bool);
+            impl DeltaV {
+                pub fn set(&mut self, delta_v: f64) {
+                    self.1 = self.0 != delta_v;
+                    self.0 = delta_v;
                 }
                 pub fn get(&self) -> f64 {
                     self.0
@@ -417,9 +485,9 @@ pub mod runtime {
         pub struct Context {
             pub radar_m: ctx_ty::RadarM,
             pub speed_m_s: ctx_ty::SpeedMS,
-            pub vel_delta: ctx_ty::VelDelta,
             pub brakes_m_s: ctx_ty::BrakesMS,
             pub radar_e_old: ctx_ty::RadarEOld,
+            pub delta_v: ctx_ty::DeltaV,
             pub speed_km_h: ctx_ty::SpeedKmH,
             pub x: ctx_ty::X,
             pub cond: ctx_ty::Cond,
@@ -431,9 +499,9 @@ pub mod runtime {
             fn reset(&mut self) {
                 self.radar_m.reset();
                 self.speed_m_s.reset();
-                self.vel_delta.reset();
                 self.brakes_m_s.reset();
                 self.radar_e_old.reset();
+                self.delta_v.reset();
                 self.speed_km_h.reset();
                 self.x.reset();
                 self.cond.reset();
@@ -441,13 +509,17 @@ pub mod runtime {
         }
         #[derive(Default)]
         pub struct AdaptiveCruiseControlServiceStore {
+            derive: Option<((), std::time::Instant)>,
             radar_m: Option<(f64, std::time::Instant)>,
             acc_active: Option<(Activation, std::time::Instant)>,
             speed_km_h: Option<(f64, std::time::Instant)>,
         }
         impl AdaptiveCruiseControlServiceStore {
             pub fn not_empty(&self) -> bool {
-                self.radar_m.is_some() || self.acc_active.is_some() || self.speed_km_h.is_some()
+                self.derive.is_some()
+                    || self.radar_m.is_some()
+                    || self.acc_active.is_some()
+                    || self.speed_km_h.is_some()
             }
         }
         pub struct AdaptiveCruiseControlService {
@@ -456,7 +528,7 @@ pub mod runtime {
             delayed: bool,
             input_store: AdaptiveCruiseControlServiceStore,
             acc: AccState,
-            derive: grust::std::time::derivation::DeriveState,
+            derive_on: DeriveOnState,
             activate: ActivateState,
             output: grust::futures::channel::mpsc::Sender<O>,
             timer: grust::futures::channel::mpsc::Sender<(T, std::time::Instant)>,
@@ -471,8 +543,7 @@ pub mod runtime {
                 let delayed = true;
                 let input_store = Default::default();
                 let acc = <AccState as grust::core::Component>::init();
-                let derive =
-                    <grust::std::time::derivation::DeriveState as grust::core::Component>::init();
+                let derive_on = <DeriveOnState as grust::core::Component>::init();
                 let activate = <ActivateState as grust::core::Component>::init();
                 AdaptiveCruiseControlService {
                     _grust_reserved_init_instant,
@@ -480,7 +551,7 @@ pub mod runtime {
                     delayed,
                     input_store,
                     acc,
-                    derive,
+                    derive_on,
                     activate,
                     output,
                     timer,
@@ -507,19 +578,22 @@ pub mod runtime {
                     .duration_since(self._grust_reserved_init_instant)
                     .as_millis()) as f64;
                 self.context.x.set(x);
-                let grust::std::time::derivation::DeriveOutput { d: vel_delta } =
-                    <grust::std::time::derivation::DeriveState as grust::core::Component>::step(
-                        &mut self.derive,
-                        grust::std::time::derivation::DeriveInput { x: radar_m, t: x },
-                    );
-                self.context.vel_delta.set(vel_delta);
+                let DeriveOnOutput { v: delta_v } = <DeriveOnState as grust::core::Component>::step(
+                    &mut self.derive_on,
+                    DeriveOnInput {
+                        x: radar_m,
+                        t: x,
+                        e: None,
+                    },
+                );
+                self.context.delta_v.set(delta_v);
                 let AccOutput { b: brakes_m_s } = <AccState as grust::core::Component>::step(
                     &mut self.acc,
                     AccInput {
                         c: self.context.cond.get(),
                         d: radar_m,
-                        v: self.context.vel_delta.get(),
                         s: self.context.speed_m_s.get(),
+                        v: self.context.delta_v.get(),
                     },
                 );
                 self.context.brakes_m_s.set(brakes_m_s);
@@ -528,6 +602,67 @@ pub mod runtime {
                     _grust_reserved_instant,
                 )
                 .await?;
+                Ok(())
+            }
+            pub async fn handle_derive(
+                &mut self,
+                _derive_instant: std::time::Instant,
+                derive: (),
+            ) -> Result<(), grust::futures::channel::mpsc::SendError> {
+                if self.delayed {
+                    self.reset_time_constraints(_derive_instant).await?;
+                    self.context.reset();
+                    let derive_ref = &mut None;
+                    *derive_ref = Some(derive);
+                    let x = (_derive_instant
+                        .duration_since(self._grust_reserved_init_instant)
+                        .as_millis()) as f64;
+                    self.context.x.set(x);
+                    if derive_ref.is_some()
+                        || self.context.radar_m.is_new()
+                        || self.context.x.is_new()
+                    {
+                        let DeriveOnOutput { v: delta_v } =
+                            <DeriveOnState as grust::core::Component>::step(
+                                &mut self.derive_on,
+                                DeriveOnInput {
+                                    x: self.context.radar_m.get(),
+                                    t: x,
+                                    e: *derive_ref,
+                                },
+                            );
+                        self.context.delta_v.set(delta_v);
+                    }
+                    if self.context.cond.is_new()
+                        || self.context.radar_m.is_new()
+                        || self.context.speed_m_s.is_new()
+                        || self.context.delta_v.is_new()
+                    {
+                        let AccOutput { b: brakes_m_s } =
+                            <AccState as grust::core::Component>::step(
+                                &mut self.acc,
+                                AccInput {
+                                    c: self.context.cond.get(),
+                                    d: self.context.radar_m.get(),
+                                    s: self.context.speed_m_s.get(),
+                                    v: self.context.delta_v.get(),
+                                },
+                            );
+                        self.context.brakes_m_s.set(brakes_m_s);
+                    }
+                    if self.context.brakes_m_s.is_new() {
+                        self.send_output(
+                            O::BrakesMS(self.context.brakes_m_s.get(), _derive_instant),
+                            _derive_instant,
+                        )
+                        .await?;
+                    }
+                } else {
+                    let unique = self.input_store.derive.replace((derive, _derive_instant));
+                    assert!
+                    (unique.is_none(),
+                    "flow `derive` changes twice within one minimal delay of the service, consider reducing this delay");
+                }
                 Ok(())
             }
             pub async fn handle_radar_m(
@@ -560,17 +695,21 @@ pub mod runtime {
                         .as_millis()) as f64;
                     self.context.x.set(x);
                     if self.context.radar_m.is_new() || self.context.x.is_new() {
-                        let grust :: std :: time :: derivation :: DeriveOutput
-                        { d : vel_delta } = < grust :: std :: time :: derivation ::
-                        DeriveState as grust :: core :: Component > ::
-                        step(& mut self.derive, grust :: std :: time :: derivation
-                        :: DeriveInput { x : radar_m, t : x });
-                        self.context.vel_delta.set(vel_delta);
+                        let DeriveOnOutput { v: delta_v } =
+                            <DeriveOnState as grust::core::Component>::step(
+                                &mut self.derive_on,
+                                DeriveOnInput {
+                                    x: radar_m,
+                                    t: x,
+                                    e: None,
+                                },
+                            );
+                        self.context.delta_v.set(delta_v);
                     }
                     if self.context.cond.is_new()
                         || self.context.radar_m.is_new()
-                        || self.context.vel_delta.is_new()
                         || self.context.speed_m_s.is_new()
+                        || self.context.delta_v.is_new()
                     {
                         let AccOutput { b: brakes_m_s } =
                             <AccState as grust::core::Component>::step(
@@ -578,8 +717,8 @@ pub mod runtime {
                                 AccInput {
                                     c: self.context.cond.get(),
                                     d: radar_m,
-                                    v: self.context.vel_delta.get(),
                                     s: self.context.speed_m_s.get(),
+                                    v: self.context.delta_v.get(),
                                 },
                             );
                         self.context.brakes_m_s.set(brakes_m_s);
@@ -609,6 +748,7 @@ pub mod runtime {
                 self.context.reset();
                 if self.input_store.not_empty() {
                     self.reset_time_constraints(_grust_reserved_instant).await?;
+                    let derive_ref = &mut None;
                     let acc_active_ref = &mut None;
                     let radar_e_ref = &mut None;
                     let _speed_km_h_input_store = self.input_store.speed_km_h.take();
@@ -640,22 +780,31 @@ pub mod runtime {
                             );
                         self.context.cond.set(cond);
                     }
+                    let _derive_input_store = self.input_store.derive.take();
+                    *derive_ref = _derive_input_store.map(|(x, _)| x);
                     let x = (_grust_reserved_instant
                         .duration_since(self._grust_reserved_init_instant)
                         .as_millis()) as f64;
                     self.context.x.set(x);
-                    if self.context.radar_m.is_new() || self.context.x.is_new() {
-                        let grust :: std :: time :: derivation :: DeriveOutput
-                        { d : vel_delta } = < grust :: std :: time :: derivation ::
-                        DeriveState as grust :: core :: Component > ::
-                        step(& mut self.derive, grust :: std :: time :: derivation
-                        :: DeriveInput { x : self.context.radar_m.get(), t : x });
-                        self.context.vel_delta.set(vel_delta);
+                    if derive_ref.is_some()
+                        || self.context.radar_m.is_new()
+                        || self.context.x.is_new()
+                    {
+                        let DeriveOnOutput { v: delta_v } =
+                            <DeriveOnState as grust::core::Component>::step(
+                                &mut self.derive_on,
+                                DeriveOnInput {
+                                    x: self.context.radar_m.get(),
+                                    t: x,
+                                    e: *derive_ref,
+                                },
+                            );
+                        self.context.delta_v.set(delta_v);
                     }
                     if self.context.cond.is_new()
                         || self.context.radar_m.is_new()
-                        || self.context.vel_delta.is_new()
                         || self.context.speed_m_s.is_new()
+                        || self.context.delta_v.is_new()
                     {
                         let AccOutput { b: brakes_m_s } =
                             <AccState as grust::core::Component>::step(
@@ -663,8 +812,8 @@ pub mod runtime {
                                 AccInput {
                                     c: self.context.cond.get(),
                                     d: self.context.radar_m.get(),
-                                    v: self.context.vel_delta.get(),
                                     s: self.context.speed_m_s.get(),
+                                    v: self.context.delta_v.get(),
                                 },
                             );
                         self.context.brakes_m_s.set(brakes_m_s);
@@ -718,17 +867,21 @@ pub mod runtime {
                         .as_millis()) as f64;
                     self.context.x.set(x);
                     if self.context.radar_m.is_new() || self.context.x.is_new() {
-                        let grust :: std :: time :: derivation :: DeriveOutput
-                        { d : vel_delta } = < grust :: std :: time :: derivation ::
-                        DeriveState as grust :: core :: Component > ::
-                        step(& mut self.derive, grust :: std :: time :: derivation
-                        :: DeriveInput { x : self.context.radar_m.get(), t : x });
-                        self.context.vel_delta.set(vel_delta);
+                        let DeriveOnOutput { v: delta_v } =
+                            <DeriveOnState as grust::core::Component>::step(
+                                &mut self.derive_on,
+                                DeriveOnInput {
+                                    x: self.context.radar_m.get(),
+                                    t: x,
+                                    e: None,
+                                },
+                            );
+                        self.context.delta_v.set(delta_v);
                     }
                     if self.context.cond.is_new()
                         || self.context.radar_m.is_new()
-                        || self.context.vel_delta.is_new()
                         || self.context.speed_m_s.is_new()
+                        || self.context.delta_v.is_new()
                     {
                         let AccOutput { b: brakes_m_s } =
                             <AccState as grust::core::Component>::step(
@@ -736,8 +889,8 @@ pub mod runtime {
                                 AccInput {
                                     c: self.context.cond.get(),
                                     d: self.context.radar_m.get(),
-                                    v: self.context.vel_delta.get(),
                                     s: self.context.speed_m_s.get(),
+                                    v: self.context.delta_v.get(),
                                 },
                             );
                         self.context.brakes_m_s.set(brakes_m_s);
@@ -772,28 +925,29 @@ pub mod runtime {
                     .as_millis()) as f64;
                 self.context.x.set(x);
                 if self.context.radar_m.is_new() || self.context.x.is_new() {
-                    let grust::std::time::derivation::DeriveOutput { d: vel_delta } =
-                        <grust::std::time::derivation::DeriveState as grust::core::Component>::step(
-                            &mut self.derive,
-                            grust::std::time::derivation::DeriveInput {
+                    let DeriveOnOutput { v: delta_v } =
+                        <DeriveOnState as grust::core::Component>::step(
+                            &mut self.derive_on,
+                            DeriveOnInput {
                                 x: self.context.radar_m.get(),
                                 t: x,
+                                e: None,
                             },
                         );
-                    self.context.vel_delta.set(vel_delta);
+                    self.context.delta_v.set(delta_v);
                 }
                 if self.context.cond.is_new()
                     || self.context.radar_m.is_new()
-                    || self.context.vel_delta.is_new()
                     || self.context.speed_m_s.is_new()
+                    || self.context.delta_v.is_new()
                 {
                     let AccOutput { b: brakes_m_s } = <AccState as grust::core::Component>::step(
                         &mut self.acc,
                         AccInput {
                             c: self.context.cond.get(),
                             d: self.context.radar_m.get(),
-                            v: self.context.vel_delta.get(),
                             s: self.context.speed_m_s.get(),
+                            v: self.context.delta_v.get(),
                         },
                     );
                     self.context.brakes_m_s.set(brakes_m_s);
@@ -839,17 +993,21 @@ pub mod runtime {
                         .as_millis()) as f64;
                     self.context.x.set(x);
                     if self.context.radar_m.is_new() || self.context.x.is_new() {
-                        let grust :: std :: time :: derivation :: DeriveOutput
-                        { d : vel_delta } = < grust :: std :: time :: derivation ::
-                        DeriveState as grust :: core :: Component > ::
-                        step(& mut self.derive, grust :: std :: time :: derivation
-                        :: DeriveInput { x : self.context.radar_m.get(), t : x });
-                        self.context.vel_delta.set(vel_delta);
+                        let DeriveOnOutput { v: delta_v } =
+                            <DeriveOnState as grust::core::Component>::step(
+                                &mut self.derive_on,
+                                DeriveOnInput {
+                                    x: self.context.radar_m.get(),
+                                    t: x,
+                                    e: None,
+                                },
+                            );
+                        self.context.delta_v.set(delta_v);
                     }
                     if self.context.cond.is_new()
                         || self.context.radar_m.is_new()
-                        || self.context.vel_delta.is_new()
                         || self.context.speed_m_s.is_new()
+                        || self.context.delta_v.is_new()
                     {
                         let AccOutput { b: brakes_m_s } =
                             <AccState as grust::core::Component>::step(
@@ -857,8 +1015,8 @@ pub mod runtime {
                                 AccInput {
                                     c: self.context.cond.get(),
                                     d: self.context.radar_m.get(),
-                                    v: self.context.vel_delta.get(),
                                     s: self.context.speed_m_s.get(),
+                                    v: self.context.delta_v.get(),
                                 },
                             );
                         self.context.brakes_m_s.set(brakes_m_s);
@@ -925,7 +1083,7 @@ pub fn run(
             .map(|(timer, deadline)| runtime::RuntimeInput::Timer(timer, deadline));
     const OUTPUT_CHANNEL_SIZE: usize = 1usize;
     let (output_sink, output_stream) = grust::futures::channel::mpsc::channel(OUTPUT_CHANNEL_SIZE);
-    const PRIO_STREAM_SIZE: usize = 4usize;
+    const PRIO_STREAM_SIZE: usize = 5usize;
     let prio_stream = grust::core::priority_stream::prio_stream::<_, _, PRIO_STREAM_SIZE>(
         grust::futures::stream::select(input_stream, timers_stream),
         runtime::RuntimeInput::order,
