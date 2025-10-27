@@ -14,7 +14,7 @@ A procedural macro for the grust language.
 3. Retrieve `grustine` repository
 
     ```text
-    > git clone https://gitlab.isae-supaero.fr/langrust/grustine.git
+    > git clone https://github.com/langrust/grust.git
     ```
 
 ## Build
