@@ -1,0 +1,61 @@
+[
+    [
+        15,
+        {
+            "variant": "RadarM",
+            "value": 130.0
+        }
+    ],
+    [
+        35,
+        {
+            "variant": "Derive"
+        }
+    ],
+    [
+        70,
+        {
+            "variant": "Derive"
+        }
+    ],
+    [
+        1000,
+        {
+            "variant": "AccActive",
+            "value": 0
+        }
+    ],
+    [
+        1005,
+        {
+            "variant": "SpeedKmH",
+            "value": 131.0
+        }
+    ],
+    [
+        1025,
+        {
+            "variant": "Derive"
+        }
+    ],
+    [
+        1040,
+        {
+            "variant": "RadarM",
+            "value": 125.0
+        }
+    ],
+    [
+        1525,
+        {
+            "variant": "Derive"
+        }
+    ],
+    [
+        1650,
+        {
+            "variant": "SpeedKmH",
+            "value": 128.0
+        }
+    ]
+]

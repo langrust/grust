@@ -7,3 +7,5 @@ edition.workspace = true
 
 [dependencies]
 grust = { workspace = true }
+json = { workspace = true }
+serde = { workspace = true }
