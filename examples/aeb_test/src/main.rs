@@ -110,8 +110,8 @@ impl From<(Instant, RuntimeOutput)> for TimedOutput {
 
 #[tokio::main]
 async fn main() {
-    const INPUT_PATH: &str = "examples/aeb/data/inputs.json";
-    const OUTPUT_PATH: &str = "examples/aeb/data/outputs.json";
+    const INPUT_PATH: &str = "examples/aeb_test/data/inputs.json";
+    const OUTPUT_PATH: &str = "examples/aeb_test/data/outputs.json";
     let INIT: Instant = Instant::now();
 
     // read inputs
