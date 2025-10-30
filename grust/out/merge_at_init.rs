@@ -352,7 +352,9 @@ pub mod runtime {
                         .input_store
                         .measure
                         .replace((measure, _measure_instant));
-                    assert ! (unique . is_none () , "flow `measure` changes twice within one minimal delay of the service, consider reducing this delay");
+                    assert!
+                    (unique.is_none(),
+                    "flow `measure` changes twice within one minimal delay of the service, consider reducing this delay");
                 }
                 Ok(())
             }
@@ -382,7 +384,9 @@ pub mod runtime {
                         .input_store
                         .stabilize
                         .replace((stabilize, _stabilize_instant));
-                    assert ! (unique . is_none () , "flow `stabilize` changes twice within one minimal delay of the service, consider reducing this delay");
+                    assert!
+                    (unique.is_none(),
+                    "flow `stabilize` changes twice within one minimal delay of the service, consider reducing this delay");
                 }
                 Ok(())
             }
