@@ -889,9 +889,7 @@ pub mod runtime {
                         .input_store
                         .failure
                         .replace((failure, _failure_instant));
-                    assert!
-                    (unique.is_none(),
-                    "flow `failure` changes twice within one minimal delay of the service, consider reducing this delay");
+                    assert ! (unique . is_none () , "flow `failure` changes twice within one minimal delay of the service, consider reducing this delay");
                 }
                 Ok(())
             }
@@ -946,9 +944,7 @@ pub mod runtime {
                     }
                 } else {
                     let unique = self.input_store.speed.replace((speed, _speed_instant));
-                    assert!
-                    (unique.is_none(),
-                    "flow `speed` changes twice within one minimal delay of the service, consider reducing this delay");
+                    assert ! (unique . is_none () , "flow `speed` changes twice within one minimal delay of the service, consider reducing this delay");
                 }
                 Ok(())
             }
@@ -1006,9 +1002,7 @@ pub mod runtime {
                         .input_store
                         .vacuum_brake
                         .replace((vacuum_brake, _vacuum_brake_instant));
-                    assert!
-                    (unique.is_none(),
-                    "flow `vacuum_brake` changes twice within one minimal delay of the service, consider reducing this delay");
+                    assert ! (unique . is_none () , "flow `vacuum_brake` changes twice within one minimal delay of the service, consider reducing this delay");
                 }
                 Ok(())
             }
@@ -1068,9 +1062,7 @@ pub mod runtime {
                         .input_store
                         .activation
                         .replace((activation, _activation_instant));
-                    assert!
-                    (unique.is_none(),
-                    "flow `activation` changes twice within one minimal delay of the service, consider reducing this delay");
+                    assert ! (unique . is_none () , "flow `activation` changes twice within one minimal delay of the service, consider reducing this delay");
                 }
                 Ok(())
             }
@@ -1130,9 +1122,7 @@ pub mod runtime {
                         .input_store
                         .kickdown
                         .replace((kickdown, _kickdown_instant));
-                    assert!
-                    (unique.is_none(),
-                    "flow `kickdown` changes twice within one minimal delay of the service, consider reducing this delay");
+                    assert ! (unique . is_none () , "flow `kickdown` changes twice within one minimal delay of the service, consider reducing this delay");
                 }
                 Ok(())
             }
@@ -1217,9 +1207,7 @@ pub mod runtime {
                         .input_store
                         .set_speed
                         .replace((set_speed, _set_speed_instant));
-                    assert!
-                    (unique.is_none(),
-                    "flow `set_speed` changes twice within one minimal delay of the service, consider reducing this delay");
+                    assert ! (unique . is_none () , "flow `set_speed` changes twice within one minimal delay of the service, consider reducing this delay");
                 }
                 Ok(())
             }
